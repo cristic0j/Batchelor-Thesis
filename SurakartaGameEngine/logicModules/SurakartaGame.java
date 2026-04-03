@@ -99,11 +99,11 @@ public class SurakartaGame{
 
     public int getPlayerTurn(){
         if (getStackLength() % 2 == 0) {
-            System.err.println("Player2's turn");
+            System.err.println("Player1's turn");
             return 2;
         }
-
-        System.err.println("Player1's turn");
+        
+        System.err.println("Player2's turn");
         return 1;
     }
     

@@ -34,7 +34,6 @@ public class MoveValidator {
 
     public static boolean validateMove(Move move, int playerTurn){
         if (!turnValidator(move, playerTurn)) {
-            System.err.println("Turn issue!");
             return false;
         }
 
@@ -70,19 +69,16 @@ public class MoveValidator {
 
         //Check if the move is one sqare radius
         if (distanceX > 1 || distanceY > 1) {
-            System.err.println("Simple move issue!");
             return false;
         }
 
         //Check if starting move is not 0
         if (valueAtOldCoordinates == 0){
-            System.err.println("Simple move issue!");
             return false;
         }
 
         //Check if new coordinate is 0
         if (valueAtNewCoordinates != 0) {
-            System.err.println("Simple move issue!");
             return false;
         }
 
@@ -95,7 +91,6 @@ public class MoveValidator {
         int valueAtNewCoordinates = boardMatrix[move.getNewCoordinate().value];
 
         if (valueAtNewCoordinates == 0 || valueAtNewCoordinates == valueAtOldCoordinates || valueAtOldCoordinates == 0) {
-            System.err.println("Take issue!");
             return false;
         }
 
@@ -175,28 +170,23 @@ public class MoveValidator {
 
         //Return False if iteration is higher than 24 or oldCoordinate value is different than 0 
         if (input.getIteration() > 24 || input.getBoardMap()[input.getOldCoordinate().value] != 0 ) {
-            System.err.println("Recursive move issue A!");
             return false;
         }
 
         //If top left corner is reached
         if ((input.getOldCoordinate().value == 0) && (input.getDirection() == 0 || input.getDirection() == 3)) {
-            System.err.println("Recursive move issue!");
             return false;
         }
         //If top right corner is reached
         if ((input.getOldCoordinate().value == 5) && (input.getDirection() == 0 || input.getDirection() == 1)) {
-            System.err.println("Recursive move issue!");
             return false;
         }
         //If bottom left corner is reached
         if ((input.getOldCoordinate().value == 30) && (input.getDirection() == 2 || input.getDirection() == 3)) {
-            System.err.println("Recursive move issue!");
             return false;
         }
         //If bottom right corner is reached
         if ((input.getOldCoordinate().value == 35) && (input.getDirection() == 2 || input.getDirection() == 1)) {
-            System.err.println("Recursive move issue!");
             return false;
         }
 
