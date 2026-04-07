@@ -115,8 +115,8 @@ public class RecursionInput {
     public int getKeyForCircleMoveMap(){
         return getOldCoordinate().value;
     }
-    public Coordinate getCoordinateFromCircleMoveMap(){
-        return CircleMoveMap.moves.get(getKeyForCircleMoveMap());
+    public Coordinate getCoordinateFromCircleMoveMap() {
+        Coordinate mapCoord = CircleMoveMap.moves.get(getKeyForCircleMoveMap());
+        return new Coordinate(mapCoord.value);
     }
-
 }

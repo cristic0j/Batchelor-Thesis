@@ -1,4 +1,5 @@
-package EndGameDatabase.moveGenerator;
+package EndGameDatabase.dataClasses;
+
 
 public class RecursivePiecePlacementInput {
     private final int iterationNumber;
