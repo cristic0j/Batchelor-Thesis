@@ -1,7 +1,7 @@
-package EndGameDatabase.moveGenerator;
+package EndGameDatabase.logicModules;
+import EndGameDatabase.dataClasses.RecursivePiecePlacementInput;
 
-
-public class MoveGenerator {
+public class PiecePlacementGenerator {
     private final int numberOfBlackPieces;
     private final int numberOfWhitePieces;
     private final int numberOfBlackAndWhitePieces;
@@ -9,7 +9,7 @@ public class MoveGenerator {
     private int numberOfPossibleMoves;
     private int[] board;
 
-    public MoveGenerator(int numberOfBlackPieces, int numberOfWhitePieces, int boardSize){
+    public PiecePlacementGenerator(int numberOfBlackPieces, int numberOfWhitePieces, int boardSize){
         this.numberOfBlackPieces = numberOfBlackPieces;
         this.numberOfWhitePieces = numberOfWhitePieces;
         this.numberOfBlackAndWhitePieces = numberOfBlackPieces+numberOfWhitePieces;
@@ -77,10 +77,7 @@ public class MoveGenerator {
                 removePieceOnBoardAtPosition(i);
 
                 increaseNumberOfPossibleMoves();
-
-                
             }
         }
-    }
-    
+    }    
 }

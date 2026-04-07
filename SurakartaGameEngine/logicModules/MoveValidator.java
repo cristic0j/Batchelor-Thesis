@@ -64,6 +64,10 @@ public class MoveValidator {
         int distanceX = Math.abs(oldCoordonateToX - newCoordonateToX);
         int distanceY = Math.abs(oldCoordonateToY - newCoordonateToY);
 
+        if (move.getOldCoordinate().value < 0 || move.getNewCoordinate().value < 0) {
+            return false;
+        }
+
         int valueAtOldCoordinates = boardMatrix[move.getOldCoordinate().value];
         int valueAtNewCoordinates = boardMatrix[move.getNewCoordinate().value];
 
@@ -210,11 +214,11 @@ public class MoveValidator {
             input.setTrueLastIterationWasALoop();
             //Set true did perform at least a loop  
             input.setTrueDidPerformALoop();
-            //Set the new coordinate
-            input.setOldCoordinateWithNewFromCircleMoveMap();
             //Change the direction
             input.changeDirectionOrientationAfterLoop();
-
+            //Set the new coordinate
+            input.setOldCoordinateWithNewFromCircleMoveMap();
+            
             return recursiveValidation(input);
         }
     } 
