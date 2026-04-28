@@ -1,5 +1,4 @@
-package EndGameDatabase.dataClasses;
-
+package RemovedFiles;
 
 public class RecursivePiecePlacementInput {
     private final int iterationNumber;

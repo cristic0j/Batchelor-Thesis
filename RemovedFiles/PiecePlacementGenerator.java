@@ -1,15 +1,14 @@
-package EndGameDatabase.logicModules;
-import EndGameDatabase.dataClasses.RecursivePiecePlacementInput;
-
+package RemovedFiles;
 public class PiecePlacementGenerator {
     private final int numberOfBlackPieces;
     private final int numberOfWhitePieces;
     private final int numberOfBlackAndWhitePieces;
 
     private int numberOfPossibleMoves;
+    private boolean isOneByOne;
     private int[] board;
 
-    public PiecePlacementGenerator(int numberOfBlackPieces, int numberOfWhitePieces, int boardSize){
+    public PiecePlacementGenerator(int numberOfBlackPieces, int numberOfWhitePieces, int boardSize, boolean isOneByOne){
         this.numberOfBlackPieces = numberOfBlackPieces;
         this.numberOfWhitePieces = numberOfWhitePieces;
         this.numberOfBlackAndWhitePieces = numberOfBlackPieces+numberOfWhitePieces;
@@ -18,6 +17,7 @@ public class PiecePlacementGenerator {
             board[i] = 0;
         }
         this.numberOfPossibleMoves = 0;
+        this.isOneByOne = isOneByOne;
     }
 
     public void start(){
@@ -73,6 +73,9 @@ public class PiecePlacementGenerator {
                 addPieceOnBoardAtPosition(i,input.getPieceType());
 
                 // Do something ...
+                if (isOneByOne) {
+                    
+                }
 
                 removePieceOnBoardAtPosition(i);
 

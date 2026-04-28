@@ -1,4 +1,4 @@
-package EndGameDatabase.logicModules.RandomAccesFile;
+package EndGameDatabase.logicModules.RandomAccessFile;
 
 import java.io.File;
 import java.io.IOException;

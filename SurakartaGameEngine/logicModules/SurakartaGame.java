@@ -56,15 +56,15 @@ public class SurakartaGame{
 
 
     public static BoardState startState(){
-        int player1PiecesNum = 12;
-        int player2PiecesNum = 12;
+        int player1PiecesNum = 1;
+        int player2PiecesNum = 1;
         int[] boardMap = {
-                        1,1,1,1,1,1,
-                        1,1,1,1,1,1,
+                        0,0,0,0,0,0,
+                        1,0,0,0,0,0,
+                        0,0,0,0,0,0,
+                        0,0,0,0,0,2,
                         0,0,0,0,0,0,
                         0,0,0,0,0,0,
-                        2,2,2,2,2,2,
-                        2,2,2,2,2,2,
                     };
         //Create starting state
         BoardState startState = new BoardState(boardMap, player1PiecesNum, player2PiecesNum);

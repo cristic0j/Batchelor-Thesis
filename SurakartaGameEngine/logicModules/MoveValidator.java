@@ -64,7 +64,10 @@ public class MoveValidator {
         int distanceX = Math.abs(oldCoordonateToX - newCoordonateToX);
         int distanceY = Math.abs(oldCoordonateToY - newCoordonateToY);
 
-        if (move.getOldCoordinate().value < 0 || move.getNewCoordinate().value < 0) {
+        if (move.getOldCoordinate().value < 0 ||
+            move.getNewCoordinate().value < 0 || 
+            move.getOldCoordinate().value > move.getBoardState().getBoardMap().length-1 || 
+            move.getNewCoordinate().value > move.getBoardState().getBoardMap().length-1) {
             return false;
         }
 
@@ -95,6 +98,14 @@ public class MoveValidator {
         int valueAtNewCoordinates = boardMatrix[move.getNewCoordinate().value];
 
         if (valueAtNewCoordinates == 0 || valueAtNewCoordinates == valueAtOldCoordinates || valueAtOldCoordinates == 0) {
+            return false;
+        }
+
+        if (move.getOldCoordinate().value == 0 || move.getOldCoordinate().value == 5 || move.getOldCoordinate().value == 30 || move.getOldCoordinate().value == 35) {
+            return false;
+        }
+
+        if (move.getNewCoordinate().value == 0 || move.getNewCoordinate().value == 5 || move.getNewCoordinate().value == 30 || move.getNewCoordinate().value == 35) {
             return false;
         }
 

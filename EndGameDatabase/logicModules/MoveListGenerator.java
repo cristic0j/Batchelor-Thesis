@@ -10,11 +10,11 @@ import logicModules.MoveValidator;
 
 public class MoveListGenerator {
 
-    public static List<Move> getSimpleMoveList(int[] board){
+    public static List<Move> getSimpleMoveList(int[] board, int activePlayer){
         List<Move> moves = new ArrayList<>();
         
         for (int i = 0; i < board.length; i++) {
-            if (board[i] == 1) {
+            if (board[i] == activePlayer) {
                 //Common values
                 BoardState boardState = new BoardState(board, 0, 0);
                 Coordinate oldCoordinate = new Coordinate(i);
@@ -39,35 +39,36 @@ public class MoveListGenerator {
         return moves;
     }
 
-    public static List<Move> getTakeMoveList(int[] board){
+    public static List<Move> getTakeMoveList(int[] board, int activePlayer) {
         List<Move> moves = new ArrayList<>();
-        List<Integer> player1PieceCoordinateList = new ArrayList<>();
-        List<Integer> player2PieceCoordinateList = new ArrayList<>();
+        List<Integer> activePlayerPieces = new ArrayList<>();
+        List<Integer> opponentPieces = new ArrayList<>();
         
-        //Get where player1 and player2 pieces are on the board
+        // Determine the opponent based on the activePlayer
+        int opponent = (activePlayer == 1) ? 2 : 1;
+        
+        // 1. Identify where the active player's pieces and the opponent's pieces are
         for (int i = 0; i < board.length; i++) {
-            if (board[i] == 1) {
-                player1PieceCoordinateList.add(i);
-            }else if (board[i] == 2) {
-                player2PieceCoordinateList.add(i);
+            if (board[i] == activePlayer) {
+                activePlayerPieces.add(i);
+            } else if (board[i] == opponent) {
+                opponentPieces.add(i);
             }
         }
 
         BoardState boardState = new BoardState(board, 0, 0);
 
-        //Iterate throught black pieces
-        for (Integer player1PieceCoo : player1PieceCoordinateList) {
-            for (Integer player2PieceCoo : player2PieceCoordinateList) {
-                int player1Val = player1PieceCoo;
-                int player2Val = player2PieceCoo;
-
-                Coordinate oldCoordinate = new Coordinate(player1Val);
-                Coordinate newCoordinate = new Coordinate(player2Val);
+        // 2. Iterate through active player pieces and check for valid takes against opponent pieces
+        for (Integer activeCoo : activePlayerPieces) {
+            for (Integer opponentCoo : opponentPieces) {
+                
+                Coordinate oldCoordinate = new Coordinate(activeCoo);
+                Coordinate newCoordinate = new Coordinate(opponentCoo);
 
                 Move move = new Move(boardState, oldCoordinate, newCoordinate);
 
+                // The validator should now check if the move from active -> opponent is valid
                 if (MoveValidator.takeValidator(move)) {
-                    // System.err.println("Player 1: "+player1Val+" takes Player 2: "+player2Val);
                     moves.add(move);
                 }
             }
