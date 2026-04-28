@@ -68,38 +68,34 @@ public class SingleRAParallelExecutor {
     }
 
     public CompletableFuture<Void> start() {
-        System.err.println("Starting Synchronized Parallel Retrograde Analysis...");
+        String label = "[" + leftP1Num + "v" + leftP2Num + " | " + rightP1Num + "v" + rightP2Num + "]";
+        System.err.println(label + " Starting parallel analysis...");
 
         return CompletableFuture.runAsync(() -> {
-            
+
             // Phase 1: Initialize both branches in parallel
             CompletableFuture<Void> initLeft = CompletableFuture.runAsync(() -> leftBranch.initialize());
             CompletableFuture<Void> initRight = CompletableFuture.runAsync(() -> rightBranch.initialize());
-            
+
             // Wait for both to finish initializing before moving on
             CompletableFuture.allOf(initLeft, initRight).join();
 
             // Phase 2: Synchronized Solving Loop
             boolean keepGoing = true;
             int iteration = 1;
-            
-            while (keepGoing) {
-                // System.err.println("Starting iteration " + iteration); // Optional: helpful for debugging
 
-                // Launch one pass for both branches
+            while (keepGoing) {
                 CompletableFuture<Boolean> passLeft = CompletableFuture.supplyAsync(() -> leftBranch.processUncertainStatesPass());
                 CompletableFuture<Boolean> passRight = CompletableFuture.supplyAsync(() -> rightBranch.processUncertainStatesPass());
 
-                // .join() acts as a barrier. The loop will not continue until BOTH are done.
                 boolean leftChanged = passLeft.join();
                 boolean rightChanged = passRight.join();
 
-                // If EITHER branch found a new result, we must run another full pass for both.
                 keepGoing = leftChanged || rightChanged;
                 iteration++;
             }
 
-            System.err.println("Both branches have converged and finished in " + (iteration - 1) + " iterations!");
+            System.err.println(label + " Analysis complete. Converged in " + (iteration - 1) + " iterations.");
         });
     }
 

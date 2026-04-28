@@ -31,9 +31,10 @@ public class OneVsOneAnalysis {
     }
 
     public void start() {
+        System.err.println("[1v1] Starting analysis...");
         initializeBoardStates();
         processUncertainStates();
-        System.err.println("Finished!");
+        System.err.println("[1v1] Analysis complete.");
     }
 
     private void initializeBoardStates() {
@@ -118,10 +119,5 @@ public class OneVsOneAnalysis {
     // Note: You might want to return AtomicIntegerArray or convert back to int[]
     public AtomicIntegerArray getBoardResults(){
         return boardResults;
-    }
-
-    public void printValueAtIndex(int index){
-        // 7. Thread-safe print
-        System.err.println("Value at " + index + " is " + boardResults.get(index));
     }
 }

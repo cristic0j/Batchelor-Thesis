@@ -38,8 +38,9 @@ public class SingleRetrogradeAnalysis {
     }
 
     public void initialize() {
+        System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Starting analysis...");
         initializeBoardStates();
-        System.err.println("Initialized! " + p1PiecesNum + "v" + p2PiecesNum);
+        System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Initialized.");
     }
 
     //Initialize
@@ -57,10 +58,6 @@ public class SingleRetrogradeAnalysis {
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             boolean canTake = !takeMoves.isEmpty();
 
-            if (i == 55530 && p1PiecesNum == 3) {
-                System.err.println("At 152");
-            }
-            
             boardResults.set(i, canTake ? Outcome.WIN.value : Outcome.DRAW.value);
         }
     }
@@ -69,10 +66,6 @@ public class SingleRetrogradeAnalysis {
         for (int i = 0; i < boardResults.length(); i++) {
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
-
-            if (i == 16252 && p1PiecesNum == 1) {
-                System.err.println("At 16252");
-            }
 
             boardResults.set(i, evaluateP1SinglePieceState(i, takeMoves));
         }
@@ -86,13 +79,7 @@ public class SingleRetrogradeAnalysis {
         boolean foundLossForP2 = false;
 
         for (Move move : moves) {
-            
             int nextStateResult = getResultOfMoveFromPrevious(move);
-
-            // Debugging specific state index
-            // if (stateIndex == 6591) {
-            //     System.err.println("State 6591 next result: " + nextStateResult);
-            // }
 
             if (nextStateResult == Outcome.LOSS.value) {
                 foundLossForP2 = true;
@@ -109,11 +96,6 @@ public class SingleRetrogradeAnalysis {
         boolean changed = false;
         
         for (int i = 0; i < boardResults.length(); i++) {
-            
-            if (i == 16252 && p1PiecesNum == 1) {
-                System.err.println("At 16252");
-            }
-
             if (boardResults.get(i) == Outcome.DRAW.value) {
                 int newResult = evaluateStateOutcome(i);
 
