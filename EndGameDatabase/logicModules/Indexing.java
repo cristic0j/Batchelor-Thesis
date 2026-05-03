@@ -3,7 +3,6 @@ package EndGameDatabase.logicModules;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.IndexingInput;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class Indexing {
@@ -36,38 +35,48 @@ public class Indexing {
     }
 
     public static long indexInputToFilePosition(IndexingInput indexInput, BinomialTable table) {
-        List<Integer> combinedList = new ArrayList<>();
+        List<Integer> p1List = indexInput.getP1Pieces();
+        List<Integer> p2List = indexInput.getP2Pieces();
+        int p1Count = p1List.size();
+        int p2Count = p2List.size();
+        int M = p1Count + p2Count;
 
-        combinedList.addAll(indexInput.getP1Pieces());
-        combinedList.addAll(indexInput.getP2Pieces());
-        
-        Collections.sort(combinedList);
+        // Both lists are already sorted ascending (scan order from createIndexingInput /
+        // unrank order from filePositionToIndexingInput), so we merge in O(M) and track
+        // p1 relative positions in the same pass — no ArrayList, no sort, no indexOf.
+        int[] combined = new int[M];
+        int[] relWhite  = new int[p1Count]; // relative positions of p1 pieces in combined[]
 
+        int i1 = 0, i2 = 0, pos = 0, wi = 0;
+        while (i1 < p1Count && i2 < p2Count) {
+            int v1 = p1List.get(i1);
+            int v2 = p2List.get(i2);
+            if (v1 < v2) {
+                relWhite[wi++] = pos;
+                combined[pos++] = v1;
+                i1++;
+            } else {
+                combined[pos++] = v2;
+                i2++;
+            }
+        }
+        while (i1 < p1Count) { relWhite[wi++] = pos; combined[pos++] = p1List.get(i1++); }
+        while (i2 < p2Count) { combined[pos++] = p2List.get(i2++); }
+
+        // Layer 1: sum C(combined[i], i+1)
         long index = 0;
-        // Layer 1: Summing C(Si, i)
-        for (int i = 0; i < combinedList.size(); i++) {
-            index += table.binomialTable[combinedList.get(i)][i + 1];
+        for (int i = 0; i < M; i++) {
+            index += table.binomialTable[combined[i]][i + 1];
         }
 
-        // Layer 2: Color Sum (Relative Positions)
+        // Layer 2: relWhite[] is already sorted ascending (pos was monotonically increasing)
         long colorSum = 0;
-        
-        List<Integer> relativeWhitePositions = new ArrayList<>();
-        for (Integer p1Piece : indexInput.getP1Pieces()) {
-            // Find where the piece is in the sorted combined list (0 to M-1)
-            relativeWhitePositions.add(combinedList.indexOf(p1Piece));
-        }
-        Collections.sort(relativeWhitePositions);
-
-        for (int i = 0; i < relativeWhitePositions.size(); i++) {
-            // Use the relative position (0 to M-1), not the board square!
-            colorSum += table.binomialTable[relativeWhitePositions.get(i)][i + 1];
+        for (int i = 0; i < p1Count; i++) {
+            colorSum += table.binomialTable[relWhite[i]][i + 1];
         }
 
         // Final Index calculation
-        int boardSize = 36; 
-        int M = combinedList.size();
-        index += table.binomialTable[boardSize][M] * colorSum;
+        index += table.binomialTable[36][M] * colorSum;
 
         return index;
     }
