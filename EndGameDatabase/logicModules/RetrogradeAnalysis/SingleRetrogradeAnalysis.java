@@ -8,7 +8,9 @@ import EndGameDatabase.logicModules.MoveListGenerator;
 import dataClasses.BoardState;
 import dataClasses.Move;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.stream.IntStream;
 import logicModules.MoveProcessor;
 
 public class SingleRetrogradeAnalysis {
@@ -93,21 +95,19 @@ public class SingleRetrogradeAnalysis {
     }
 
     public boolean processUncertainStatesPass() {
-        boolean changed = false;
-        
-        for (int i = 0; i < boardResults.length(); i++) {
+        AtomicBoolean changed = new AtomicBoolean(false);
+
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             if (boardResults.get(i) == Outcome.DRAW.value) {
                 int newResult = evaluateStateOutcome(i);
-
                 if (newResult != Outcome.DRAW.value) {
                     boardResults.set(i, newResult);
-                    changed = true; // Track that we made a change during this pass
+                    changed.set(true);
                 }
             }
-        }
-        
-        // Return true if we changed anything, false if we are stuck/done
-        return changed;
+        });
+
+        return changed.get();
     }
 
 

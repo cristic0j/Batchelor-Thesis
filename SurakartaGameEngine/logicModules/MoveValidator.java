@@ -1,17 +1,30 @@
 package logicModules;
 import dataClasses.BoardBorder;
-import dataClasses.BoardState;
-import dataClasses.Coordinate;
 import dataClasses.Move;
-import dataClasses.RecursionInput;
 
 public class MoveValidator {
+
+    // Circular rail jump table: CIRCLE_JUMPS[pos] = destination after a loop transition.
+    // -1 means the square is not a rail junction. Mirrors CircleMoveMap exactly.
+    private static final int[] CIRCLE_JUMPS = new int[36];
+    static {
+        java.util.Arrays.fill(CIRCLE_JUMPS, -1);
+        CIRCLE_JUMPS[6]  = 1;   CIRCLE_JUMPS[1]  = 6;
+        CIRCLE_JUMPS[12] = 2;   CIRCLE_JUMPS[2]  = 12;
+        CIRCLE_JUMPS[4]  = 11;  CIRCLE_JUMPS[11] = 4;
+        CIRCLE_JUMPS[3]  = 17;  CIRCLE_JUMPS[17] = 3;
+        CIRCLE_JUMPS[24] = 31;  CIRCLE_JUMPS[31] = 24;
+        CIRCLE_JUMPS[18] = 32;  CIRCLE_JUMPS[32] = 18;
+        CIRCLE_JUMPS[23] = 33;  CIRCLE_JUMPS[33] = 23;
+        CIRCLE_JUMPS[34] = 29;  CIRCLE_JUMPS[29] = 34;
+    }
+
     // 0 - simple move
     // 1 - take
     public static int moveTypeIdentifier(Move move){
 
         int[] boardMatrix = move.getBoardState().getBoardMap();
-        
+
         int oldCoordonateToX = move.getOldCoordinate().value % 6;
         int oldCoordonateToY = move.getOldCoordinate().value / 6;
 
@@ -21,14 +34,14 @@ public class MoveValidator {
         int valueAtNewCoordinates = boardMatrix[move.getNewCoordinate().value];
         int distanceX = Math.abs(oldCoordonateToX - newCoordonateToX);
         int distanceY = Math.abs(oldCoordonateToY - newCoordonateToY);
-        
+
         //Check if the move is one sqare radius
         if (distanceX <= 1 && distanceY <= 1) {
             if (valueAtNewCoordinates == 0) {
                 return 0;
             }
         }
-        
+
         return 1;
     }
 
@@ -65,8 +78,8 @@ public class MoveValidator {
         int distanceY = Math.abs(oldCoordonateToY - newCoordonateToY);
 
         if (move.getOldCoordinate().value < 0 ||
-            move.getNewCoordinate().value < 0 || 
-            move.getOldCoordinate().value > move.getBoardState().getBoardMap().length-1 || 
+            move.getNewCoordinate().value < 0 ||
+            move.getOldCoordinate().value > move.getBoardState().getBoardMap().length-1 ||
             move.getNewCoordinate().value > move.getBoardState().getBoardMap().length-1) {
             return false;
         }
@@ -92,145 +105,118 @@ public class MoveValidator {
         return true;
     }
 
+    // Game-engine entry point: unwraps the Move and delegates to the primitive overload.
     public static boolean takeValidator(Move move){
-        int[] boardMatrix = move.getBoardState().getBoardMap();
-        int valueAtOldCoordinates = boardMatrix[move.getOldCoordinate().value];
-        int valueAtNewCoordinates = boardMatrix[move.getNewCoordinate().value];
+        return takeValidator(
+            move.getBoardState().getBoardMap(),
+            move.getOldCoordinate().value,
+            move.getNewCoordinate().value
+        );
+    }
 
-        if (valueAtNewCoordinates == 0 || valueAtNewCoordinates == valueAtOldCoordinates || valueAtOldCoordinates == 0) {
+    // Primitive overload — no object allocation. Called directly by MoveListGenerator
+    // to avoid creating Coordinate/Move/BoardState before knowing the move is valid.
+    public static boolean takeValidator(int[] boardMatrix, int oldPos, int newPos){
+        int oldVal = boardMatrix[oldPos];
+        int newVal = boardMatrix[newPos];
+
+        if (newVal == 0 || newVal == oldVal || oldVal == 0) {
             return false;
         }
 
-        if (move.getOldCoordinate().value == 0 || move.getOldCoordinate().value == 5 || move.getOldCoordinate().value == 30 || move.getOldCoordinate().value == 35) {
+        if (oldPos == 0 || oldPos == 5 || oldPos == 30 || oldPos == 35) {
             return false;
         }
 
-        if (move.getNewCoordinate().value == 0 || move.getNewCoordinate().value == 5 || move.getNewCoordinate().value == 30 || move.getNewCoordinate().value == 35) {
+        if (newPos == 0 || newPos == 5 || newPos == 30 || newPos == 35) {
             return false;
         }
 
-        // recursive validation ...
-        // Set the starting position to 0 so we dont bump into it while checking
-        int[] recursiveCheckMatrixCopy = boardMatrix.clone();
-        recursiveCheckMatrixCopy[move.getOldCoordinate().value] = 0;
-        
-
-        Move recursiveUpMove = new Move(new BoardState(recursiveCheckMatrixCopy,0,0), 
-                            new Coordinate(move.getOldCoordinate().value), new Coordinate(move.getNewCoordinate().value));
-
-        Move recursiveRightMove = new Move(new BoardState(recursiveCheckMatrixCopy,0,0), 
-                            new Coordinate(move.getOldCoordinate().value), new Coordinate(move.getNewCoordinate().value));
-
-        Move recursiveDownMove = new Move(new BoardState(recursiveCheckMatrixCopy,0,0), 
-                            new Coordinate(move.getOldCoordinate().value), new Coordinate(move.getNewCoordinate().value));
-
-        Move recursiveLeftMove = new Move(new BoardState(recursiveCheckMatrixCopy,0,0), 
-                            new Coordinate(move.getOldCoordinate().value), new Coordinate(move.getNewCoordinate().value));
+        // Clone once and zero the starting square so the rail trace doesn't collide with it
+        int[] board = boardMatrix.clone();
+        board[oldPos] = 0;
 
         // Y == 0
-        //Up lastIterationWasALoop = false
-        //Down lastIterationWasALoop = true
-        //Left/Right always false
-        if (BoardBorder.isTop(move.getOldCoordinate().value)) {
-            return (
-                recursiveValidation(new RecursionInput(0, 1, false, false, recursiveUpMove))||
-                recursiveValidation(new RecursionInput(2, 1, false, true, recursiveDownMove))
-            );
+        // Up  lastWasLoop=false  (piece about to enter the rail going up)
+        // Down lastWasLoop=true  (piece is already facing away from the rail)
+        if (BoardBorder.isTop(oldPos)) {
+            return traceRail(board, oldPos, newPos, 0, false, false) ||
+                   traceRail(board, oldPos, newPos, 2, false, true);
         }
         // X == 5
-        //Right lastIterationWasALoop = false
-        //Left lastIterationWasALoop = true
-        //Up/Down always false
-        else if(BoardBorder.isRight(move.getOldCoordinate().value)){
-            return (
-                recursiveValidation(new RecursionInput(1, 1, false, false, recursiveRightMove))||
-                recursiveValidation(new RecursionInput(3, 1, false, true, recursiveLeftMove))
-            );
+        else if (BoardBorder.isRight(oldPos)) {
+            return traceRail(board, oldPos, newPos, 1, false, false) ||
+                   traceRail(board, oldPos, newPos, 3, false, true);
         }
         // Y == 5
-        //Up lastIterationWasALoop = true
-        //Down lastIterationWasALoop = false
-        //Left/Right always false
-        else if(BoardBorder.isBottom(move.getOldCoordinate().value)){
-            return (
-                recursiveValidation(new RecursionInput(0, 1, false, true, recursiveUpMove))||
-                recursiveValidation(new RecursionInput(2, 1, false, false, recursiveDownMove))
-            );
+        else if (BoardBorder.isBottom(oldPos)) {
+            return traceRail(board, oldPos, newPos, 0, false, true) ||
+                   traceRail(board, oldPos, newPos, 2, false, false);
         }
         // X == 0
-        //Right lastIterationWasALoop = true
-        //Left lastIterationWasALoop = false
-        //Up/Down always false
-        else if(BoardBorder.isLeft(move.getOldCoordinate().value)){
-            return (
-                recursiveValidation(new RecursionInput(1, 1, false, true, recursiveRightMove))||
-                recursiveValidation(new RecursionInput(3, 1, false, false, recursiveLeftMove))
-            );
+        else if (BoardBorder.isLeft(oldPos)) {
+            return traceRail(board, oldPos, newPos, 1, false, true) ||
+                   traceRail(board, oldPos, newPos, 3, false, false);
         }
-        else{
-            return (
-                recursiveValidation(new RecursionInput(0, 1, false, false, recursiveUpMove))||
-                recursiveValidation(new RecursionInput(1, 1, false, false, recursiveRightMove))||
-                recursiveValidation(new RecursionInput(2, 1, false, false, recursiveDownMove))||
-                recursiveValidation(new RecursionInput(3, 1, false, false, recursiveLeftMove))
-            );
+        else {
+            return traceRail(board, oldPos, newPos, 0, false, false) ||
+                   traceRail(board, oldPos, newPos, 1, false, false) ||
+                   traceRail(board, oldPos, newPos, 2, false, false) ||
+                   traceRail(board, oldPos, newPos, 3, false, false);
         }
     }
 
-    public static boolean recursiveValidation(RecursionInput input){
-        //Base case(If coordinates match)
-        if ((input.getOldCoordinate().value == input.getNewCoordinate().value) && input.didPerformALoop()) {
-            return true;
-        }
+    // Iterative rail tracer. Replaces the old recursiveValidation(RecursionInput).
+    // All state is passed as primitives — zero heap allocation per step.
+    //
+    // board       : board with the moving piece already zeroed at oldPos
+    // pos         : starting square (== oldPos, already 0 in board)
+    // target      : destination square the attacker wants to reach
+    // direction   : 0=up, 1=right, 2=down, 3=left
+    // didLoop     : true once the path has completed at least one circular loop
+    // lastWasLoop : true if the previous step was a rail jump (suppresses the next jump check)
+    private static boolean traceRail(int[] board, int pos, int target,
+                                     int direction, boolean didLoop, boolean lastWasLoop) {
+        for (int step = 0; step <= 24; step++) {
+            // Base case: arrived at target after completing at least one loop
+            if (pos == target && didLoop) return true;
 
-        //Return False if iteration is higher than 24 or oldCoordinate value is different than 0 
-        if (input.getIteration() > 24 || input.getBoardMap()[input.getOldCoordinate().value] != 0 ) {
-            return false;
-        }
+            // Mirrors the original "iteration > 24" guard — only base-case can win on step 24
+            if (step == 24) break;
 
-        //If top left corner is reached
-        if ((input.getOldCoordinate().value == 0) && (input.getDirection() == 0 || input.getDirection() == 3)) {
-            return false;
-        }
-        //If top right corner is reached
-        if ((input.getOldCoordinate().value == 5) && (input.getDirection() == 0 || input.getDirection() == 1)) {
-            return false;
-        }
-        //If bottom left corner is reached
-        if ((input.getOldCoordinate().value == 30) && (input.getDirection() == 2 || input.getDirection() == 3)) {
-            return false;
-        }
-        //If bottom right corner is reached
-        if ((input.getOldCoordinate().value == 35) && (input.getDirection() == 2 || input.getDirection() == 1)) {
-            return false;
-        }
+            // Current square must be passable (start was zeroed before call)
+            if (board[pos] != 0) return false;
 
+            // Dead-end corners: the path cannot continue in this direction
+            if (pos == 0  && (direction == 0 || direction == 3)) return false;
+            if (pos == 5  && (direction == 0 || direction == 1)) return false;
+            if (pos == 30 && (direction == 2 || direction == 3)) return false;
+            if (pos == 35 && (direction == 2 || direction == 1)) return false;
 
-        //Increase iteration
-        input.increaseIteration();
+            boolean onBorder = (pos < 6) || (pos >= 30) || (pos % 6 == 0) || (pos % 6 == 5);
 
-        //Is not on margin or just came out of a loop
-        if (!input.isOldCoordinateOnMargin() || input.lastIterationWasALoop()) {
-            //Set last iteration was a loop to false
-            input.setFalseLastIterationWasALoop();
-            switch (input.getDirection()) {
-                case 0 -> input.moveOldCoordinateUp();
-                case 1 -> input.moveOldCoordinateRight();
-                case 2 -> input.moveOldCoordinateDown();
-                case 3 -> input.moveOldCoordinateLeft();
+            if (!onBorder || lastWasLoop) {
+                // Normal step: move one square in the current direction
+                lastWasLoop = false;
+                switch (direction) {
+                    case 0: pos -= 6; break;
+                    case 1: pos += 1; break;
+                    case 2: pos += 6; break;
+                    case 3: pos -= 1; break;
+                }
+            } else {
+                // Rail junction: change direction (using current pos), then jump
+                lastWasLoop = true;
+                didLoop = true;
+                switch (direction) {
+                    case 0: direction = (pos <= 2)  ? 1 : 3; break;
+                    case 1: direction = (pos <= 17) ? 2 : 0; break;
+                    case 2: direction = (pos <= 32) ? 1 : 3; break;
+                    case 3: direction = (pos <= 12) ? 2 : 0; break;
+                }
+                pos = CIRCLE_JUMPS[pos];
             }
-            return recursiveValidation(input);
-        }else{
-            //Set last iteration was a loop to true
-            input.setTrueLastIterationWasALoop();
-            //Set true did perform at least a loop  
-            input.setTrueDidPerformALoop();
-            //Change the direction
-            input.changeDirectionOrientationAfterLoop();
-            //Set the new coordinate
-            input.setOldCoordinateWithNewFromCircleMoveMap();
-            
-            return recursiveValidation(input);
         }
-    } 
+        return false;
+    }
 }

@@ -10,6 +10,7 @@ import dataClasses.Move;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.stream.IntStream;
 import logicModules.MoveProcessor;
 
 public class OneVsOneAnalysis {
@@ -51,24 +52,20 @@ public class OneVsOneAnalysis {
     }
 
     private void processUncertainStates() {
-        // 4. Use AtomicBoolean for thread-safe signaling across parallel threads
         AtomicBoolean changed = new AtomicBoolean(true);
-        
+
         while (changed.get()) {
             changed.set(false);
-            
-            // If you parallelize this for-loop (e.g., using IntStream.range().parallel())
-            // the AtomicIntegerArray will handle the concurrent read/writes perfectly.
-            for (int i = 0; i < boardResults.length(); i++) {
+
+            IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
                 if (boardResults.get(i) == Outcome.DRAW.value) {
                     int newResult = evaluateStateOutcome(i);
-                    
                     if (newResult != Outcome.DRAW.value) {
                         boardResults.set(i, newResult);
-                        changed.set(true); 
+                        changed.set(true);
                     }
                 }
-            }
+            });
         }
     }
 
