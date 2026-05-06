@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.stream.IntStream;
 import logicModules.MoveProcessor;
 
-public class OneVsOneAnalysis {
+public class OneVsOneRetrogradeAnalysis {
 
     // 1. Changed to AtomicIntegerArray
     private AtomicIntegerArray boardResults; 
@@ -22,7 +22,7 @@ public class OneVsOneAnalysis {
     private final int boardSize;
     private BinomialTable table;
 
-    public OneVsOneAnalysis(int boardSize, BinomialTable table){
+    public OneVsOneRetrogradeAnalysis(int boardSize, BinomialTable table){
         this.boardSize = boardSize;
         this.table = table;
         long numberOfResults = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
