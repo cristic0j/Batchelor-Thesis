@@ -93,28 +93,31 @@ public class Indexing {
         int[] combinedList = new int[totalPieces];
         long tempBase = baseIndex;
         
-        // Work backwards from largest piece to smallest
+        // Work backwards from largest piece to smallest (binary search: O(log boardSize) per piece)
         for (int i = totalPieces - 1; i >= 0; i--) {
-            int v = i; // Minimum possible square index is i
-            // Find the largest 'v' where C(v, i+1) is less than or equal to our remaining index
-            while (v + 1 <= boardSize && table.binomialTable[v + 1][i + 1] <= tempBase) {
-                v++;
+            int lo = i, hi = boardSize;
+            while (lo < hi) {
+                int mid = (lo + hi + 1) >>> 1;
+                if (table.binomialTable[mid][i + 1] <= tempBase) lo = mid;
+                else hi = mid - 1;
             }
-            combinedList[i] = v;
-            tempBase -= table.binomialTable[v][i + 1];
+            combinedList[i] = lo;
+            tempBase -= table.binomialTable[lo][i + 1];
         }
 
         // 3. Unrank Layer 2: Find the relative positions of Player 1's pieces
         int[] relativeWhitePositions = new int[p1Count];
         long tempColor = colorSum;
-        
+
         for (int i = p1Count - 1; i >= 0; i--) {
-            int v = i; 
-            while (v + 1 <= totalPieces && table.binomialTable[v + 1][i + 1] <= tempColor) {
-                v++;
+            int lo = i, hi = totalPieces;
+            while (lo < hi) {
+                int mid = (lo + hi + 1) >>> 1;
+                if (table.binomialTable[mid][i + 1] <= tempColor) lo = mid;
+                else hi = mid - 1;
             }
-            relativeWhitePositions[i] = v;
-            tempColor -= table.binomialTable[v][i + 1];
+            relativeWhitePositions[i] = lo;
+            tempColor -= table.binomialTable[lo][i + 1];
         }
 
         // 4. Reconstruct the final P1 and P2 piece lists
@@ -136,13 +139,66 @@ public class Indexing {
             }
         }
 
-        // Construct and return your object (adjust this line to match your actual constructor)
         IndexingInput result = new IndexingInput(
             p1Pieces,
             p2Pieces,
             boardSize
         );
-        
+
         return result;
+    }
+
+    /**
+     * Zero-allocation variant of filePositionToIndexingInput.
+     * Writes sorted P1 positions into p1Out[0..p1Count-1] and P2 into p2Out[0..p2Count-1].
+     *
+     * combinedScratch  — caller-provided scratch, length >= p1Count + p2Count.
+     * isP1Scratch      — caller-provided scratch, length >= p1Count + p2Count;
+     *                    must be all-false on entry and is restored to all-false on exit.
+     */
+    public static void filePositionToPrimitiveArrays(
+        long index, int boardSize, int p1Count, int p2Count,
+        BinomialTable table,
+        int[] p1Out, int[] p2Out,
+        int[] combinedScratch, boolean[] isP1Scratch
+    ) {
+        int totalPieces = p1Count + p2Count;
+        long waysToPlaceM = table.binomialTable[boardSize][totalPieces];
+
+        long colorSum  = index / waysToPlaceM;
+        long baseIndex = index % waysToPlaceM;
+
+        // Unrank layer 1: combined occupied squares (binary search)
+        long tempBase = baseIndex;
+        for (int i = totalPieces - 1; i >= 0; i--) {
+            int lo = i, hi = boardSize;
+            while (lo < hi) {
+                int mid = (lo + hi + 1) >>> 1;
+                if (table.binomialTable[mid][i + 1] <= tempBase) lo = mid;
+                else hi = mid - 1;
+            }
+            combinedScratch[i] = lo;
+            tempBase -= table.binomialTable[lo][i + 1];
+        }
+
+        // Unrank layer 2: relative positions of P1 pieces (binary search)
+        long tempColor = colorSum;
+        for (int i = p1Count - 1; i >= 0; i--) {
+            int lo = i, hi = totalPieces;
+            while (lo < hi) {
+                int mid = (lo + hi + 1) >>> 1;
+                if (table.binomialTable[mid][i + 1] <= tempColor) lo = mid;
+                else hi = mid - 1;
+            }
+            isP1Scratch[lo] = true;
+            tempColor -= table.binomialTable[lo][i + 1];
+        }
+
+        // Reconstruct P1/P2 arrays; restore isP1Scratch to all-false in the same pass.
+        int w = 0, b = 0;
+        for (int i = 0; i < totalPieces; i++) {
+            if (isP1Scratch[i]) { p1Out[w++] = combinedScratch[i]; isP1Scratch[i] = false; }
+            else                 { p2Out[b++] = combinedScratch[i]; }
+        }
     }
 }

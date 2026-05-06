@@ -1,6 +1,6 @@
 package EndGameDatabase.logicModules.RetrogradeAnalysisExecutor;
 import EndGameDatabase.dataClasses.BinomialTable;
-import EndGameDatabase.logicModules.RetrogradeAnalysis.OneVsOneAnalysis;
+import EndGameDatabase.logicModules.RetrogradeAnalysis.OneVsOneRetrogradeAnalysis;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 
@@ -10,13 +10,13 @@ public class RootRAExecutor {
     private AtomicIntegerArray rootRAResults;
     private final int boardSize;
     private final BinomialTable table;
-    private OneVsOneAnalysis analysis;
+    private OneVsOneRetrogradeAnalysis analysis;
 
     public RootRAExecutor(int boardSize, BinomialTable table){
         this.boardSize = boardSize;
         this.table = table;
         
-        analysis = new OneVsOneAnalysis(boardSize, table);
+        analysis = new OneVsOneRetrogradeAnalysis(boardSize, table);
     }
 
     public void start(){

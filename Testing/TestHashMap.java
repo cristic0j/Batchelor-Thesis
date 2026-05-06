@@ -17,26 +17,26 @@ public class TestHashMap {
             int mapIndex = getIndexFromMap(map);
 
             // Standard Rotations
-            int[] map90 = rotate90Clockwise1D(map, 6);
+            int[] map90 = rotate90Clockwise1D(map);
             int mapIndex90 = getIndexFromMap(map90);
 
-            int[] map180 = rotate90Clockwise1D(map90, 6);
+            int[] map180 = rotate90Clockwise1D(map90);
             int mapIndex180 = getIndexFromMap(map180);
 
-            int[] map270 = rotate90Clockwise1D(map180, 6);
+            int[] map270 = rotate90Clockwise1D(map180);
             int mapIndex270 = getIndexFromMap(map270);
 
             // Mirrored Mappings
-            int[] mirrorMap = flipHorizontally1D(map, 6);
+            int[] mirrorMap = flipHorizontally1D(map);
             int mirrorMapIndex = getIndexFromMap(mirrorMap);
 
-            int[] mirrorMap90 = rotate90Clockwise1D(mirrorMap, 6);
+            int[] mirrorMap90 = rotate90Clockwise1D(mirrorMap);
             int mirrorMapIndex90 = getIndexFromMap(mirrorMap90);
 
-            int[] mirrorMap180 = rotate90Clockwise1D(mirrorMap90, 6);
+            int[] mirrorMap180 = rotate90Clockwise1D(mirrorMap90);
             int mirrorMapIndex180 = getIndexFromMap(mirrorMap180);
 
-            int[] mirrorMap270 = rotate90Clockwise1D(mirrorMap180, 6);
+            int[] mirrorMap270 = rotate90Clockwise1D(mirrorMap180);
             int mirrorMapIndex270 = getIndexFromMap(mirrorMap270);
 
             int minIndex = Math.min(
@@ -63,9 +63,11 @@ public class TestHashMap {
         return (int)index;
     }
 
-    public static int[] rotate90Clockwise1D(int[] matrix, int n) {
+    public static int[] rotate90Clockwise1D(int[] matrix) {
         int[] result = new int[matrix.length];
-        
+        //Stands for 6 from 6X6
+        int n = 6;
+
         for (int r = 0; r < n; r++) {
             for (int c = 0; c < n; c++) {
                 int oldIndex = r * n + c;
@@ -78,8 +80,10 @@ public class TestHashMap {
         return result;
     }
 
-    public static int[] flipHorizontally1D(int[] matrix, int n) {
+    public static int[] flipHorizontally1D(int[] matrix) {
         int[] result = new int[matrix.length];
+        //Stands for 6 from 6X6
+        int n = 6;
         
         for (int r = 0; r < n; r++) {
             for (int c = 0; c < n; c++) {
