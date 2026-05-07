@@ -51,15 +51,12 @@ public class OneVsOneRetrogradeAnalysis {
     }
 
     public void preInitialization(){
-        for (int i = 0; i < boardResults.length(); i++) {
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             if (boardResults.get(i) != Outcome.NON_CANONICAL_INDEX.value) {
                 int[] map = getMapFromIndex(i);
-                //get all the transform indexes (Symmetries)
                 long[] transfomIndexes = Indexing.getAllTransformIndexes(map, 6, false, table);
-                //Sort 
                 Arrays.sort(transfomIndexes);
 
-                //Lable non canonical indexes
                 boardResults.set((int)transfomIndexes[0], 2);
                 for (int j = 1; j < transfomIndexes.length; j++) {
                     if (transfomIndexes[j] != transfomIndexes[0]) {
@@ -67,36 +64,28 @@ public class OneVsOneRetrogradeAnalysis {
                     }
                 }
             }
-        }
+        });
     }
 
     public void postProcessing(){
-        for (int i = 0; i < boardResults.length(); i++) {
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) {
                 int[] map = getMapFromIndex(i);
                 long[] transformIndexes = Indexing.getAllTransformIndexes(map, 6, false, table);
                 Arrays.sort(transformIndexes);
                 boardResults.set(i, boardResults.get((int)transformIndexes[0]));
             }
-        }
+        });
     }
 
     private void initializeBoardStates() {
-        for (int i = 0; i < boardResults.length(); i++) {
-
-            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) {
-                continue;
-            }
-
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
+            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) return;
             int[] map = getMapFromIndex(i);
-            
-            if (!MoveListGenerator.getTakeMoveList(map, p1PiecesNum).isEmpty()) {
-                // 3. Use .set(index, value)
-                boardResults.set(i, Outcome.WIN.value);
-            } else {
-                boardResults.set(i, Outcome.DRAW.value);
-            }
-        }
+            boardResults.set(i, !MoveListGenerator.getTakeMoveList(map, p1PiecesNum).isEmpty()
+                ? Outcome.WIN.value
+                : Outcome.DRAW.value);
+        });
     }
 
     private void processUncertainStates() {

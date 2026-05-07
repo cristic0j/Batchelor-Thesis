@@ -42,7 +42,7 @@ public class SingleRetrogradeAnalysis {
 
     public void preInitialization() {
         System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Starting pre initialization...");
-        for (int i = 0; i < boardResults.length(); i++) {
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             if (boardResults.get(i) != Outcome.NON_CANONICAL_INDEX.value) {
                 int[] map = getMapFromIndex(i);
                 long[] transformIndexes = Indexing.getAllTransformIndexes(map, 6, false, table);
@@ -54,20 +54,20 @@ public class SingleRetrogradeAnalysis {
                     }
                 }
             }
-        }
+        });
         System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Pre initialization complete.");
     }
 
     public void postProcessing() {
         System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Starting post processing...");
-        for (int i = 0; i < boardResults.length(); i++) {
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) {
                 int[] map = getMapFromIndex(i);
                 long[] transformIndexes = Indexing.getAllTransformIndexes(map, 6, false, table);
                 Arrays.sort(transformIndexes);
                 boardResults.set(i, boardResults.get((int)transformIndexes[0]));
             }
-        }
+        });
         System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Post processing complete.");
     }
 
@@ -88,24 +88,21 @@ public class SingleRetrogradeAnalysis {
     }
 
     private void initializeForSingleP2Piece() {
-        for (int i = 0; i < boardResults.length(); i++) {
-            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) continue;
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
+            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) return;
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
-            boolean canTake = !takeMoves.isEmpty();
-
-            boardResults.set(i, canTake ? Outcome.WIN.value : Outcome.DRAW.value);
-        }
+            boardResults.set(i, !takeMoves.isEmpty() ? Outcome.WIN.value : Outcome.DRAW.value);
+        });
     }
 
     private void initializeForSingleP1Piece() {
-        for (int i = 0; i < boardResults.length(); i++) {
-            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) continue;
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
+            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) return;
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
-
             boardResults.set(i, evaluateP1SinglePieceState(i, takeMoves));
-        }
+        });
     }
 
     private int evaluateP1SinglePieceState(int stateIndex, List<Move> moves) {
