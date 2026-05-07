@@ -58,7 +58,11 @@ public class SingleRetrogradeAnalysis {
         IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
-            boardResults.set(i, !takeMoves.isEmpty() ? Outcome.WIN.value : Outcome.DRAW.value);
+            if (!takeMoves.isEmpty()) {
+                setWithSymmetry(i, Outcome.WIN.value);
+            } else {
+                boardResults.set(i, Outcome.DRAW.value);
+            }
         });
     }
 
@@ -66,7 +70,12 @@ public class SingleRetrogradeAnalysis {
         IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
-            boardResults.set(i, evaluateP1SinglePieceState(i, takeMoves));
+            int result = evaluateP1SinglePieceState(i, takeMoves);
+            if (result == Outcome.WIN.value) {
+                setWithSymmetry(i, result);
+            } else {
+                boardResults.set(i, result);
+            }
         });
     }
 
@@ -98,7 +107,7 @@ public class SingleRetrogradeAnalysis {
             if (boardResults.get(i) == Outcome.DRAW.value) {
                 int newResult = evaluateStateOutcome(i);
                 if (newResult != Outcome.DRAW.value) {
-                    boardResults.set(i, newResult);
+                    setWithSymmetry(i, newResult);
                     changed.set(true);
                 }
             }
@@ -177,6 +186,15 @@ public class SingleRetrogradeAnalysis {
     private int[] getMapFromIndex(int i) {
         IndexingInput input = Indexing.filePositionToIndexingInput(i, boardSize, p1PiecesNum, p2PiecesNum, table);
         return input.getMapFromIndexingInput(boardSize);
+    }
+
+    private void setWithSymmetry(int index, int value) {
+        int[] map = getMapFromIndex(index);
+        int n = (int) Math.sqrt(boardSize);
+        long[] symIndexes = Indexing.getAllTransformIndexes(map, n, false, table);
+        for (long symIdx : symIndexes) {
+            boardResults.set((int) symIdx, value);
+        }
     }
 
     public int getP1PiecesNum(){

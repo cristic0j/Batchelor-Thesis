@@ -41,9 +41,11 @@ public class OneVsOneRetrogradeAnalysis {
     private void initializeBoardStates() {
         IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             int[] map = getMapFromIndex(i);
-            boardResults.set(i, !MoveListGenerator.getTakeMoveList(map, p1PiecesNum).isEmpty()
-                ? Outcome.WIN.value
-                : Outcome.DRAW.value);
+            if (!MoveListGenerator.getTakeMoveList(map, p1PiecesNum).isEmpty()) {
+                setWithSymmetry(i, Outcome.WIN.value);
+            } else {
+                boardResults.set(i, Outcome.DRAW.value);
+            }
         });
     }
 
@@ -57,7 +59,7 @@ public class OneVsOneRetrogradeAnalysis {
                 if (boardResults.get(i) == Outcome.DRAW.value) {
                     int newResult = evaluateStateOutcome(i);
                     if (newResult != Outcome.DRAW.value) {
-                        boardResults.set(i, newResult);
+                        setWithSymmetry(i, newResult);
                         changed.set(true);
                     }
                 }
@@ -107,6 +109,15 @@ public class OneVsOneRetrogradeAnalysis {
     private int[] getMapFromIndex(int i) {
         IndexingInput input = Indexing.filePositionToIndexingInput(i, boardSize, p1PiecesNum, p2PiecesNum, table);
         return input.getMapFromIndexingInput(boardSize);
+    }
+
+    private void setWithSymmetry(int index, int value) {
+        int[] map = getMapFromIndex(index);
+        int n = (int) Math.sqrt(boardSize);
+        long[] symIndexes = Indexing.getAllTransformIndexes(map, n, false, table);
+        for (long symIdx : symIndexes) {
+            boardResults.set((int) symIdx, value);
+        }
     }
 
     // Note: You might want to return AtomicIntegerArray or convert back to int[]

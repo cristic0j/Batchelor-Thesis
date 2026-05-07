@@ -149,6 +149,56 @@ public class Indexing {
     }
 
     /**
+     * Returns all 8 D4 transforms of a square board:
+     * 4 rotations × 2 (with and without horizontal flip).
+     *
+     * @param board flat n*n board array (row-major).
+     * @param n     side length (6 for the standard Surakarta board).
+     * @return array of 8 boards:
+     *   [0] identity,  [1] rot90,  [2] rot180,  [3] rot270,
+     *   [4] flipH,     [5] flipH+rot90, [6] flipH+rot180, [7] flipH+rot270.
+     */
+    public static int[][] getAllTransforms(int[] board, int n) {
+        int size = n * n;
+        int[][] result = new int[8][size];
+
+        for (int r = 0; r < n; r++) {
+            for (int c = 0; c < n; c++) {
+                int src = r * n + c;
+                int val = board[src];
+                result[0][src]                          = val; // identity
+                result[1][c * n + (n - 1 - r)]         = val; // rot90
+                result[2][(n - 1 - r) * n + (n - 1 - c)] = val; // rot180
+                result[3][(n - 1 - c) * n + r]         = val; // rot270
+                result[4][r * n + (n - 1 - c)]         = val; // flipH
+                result[5][(n - 1 - c) * n + (n - 1 - r)] = val; // flipH+rot90
+                result[6][(n - 1 - r) * n + c]         = val; // flipH+rot180
+                result[7][c * n + r]                   = val; // flipH+rot270
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns the file-position indexes for all 8 D4 transforms of a board.
+     *
+     * @param board      flat n*n board array (1=P1, 2=P2, 0=empty).
+     * @param n          side length (6 for the standard Surakarta board).
+     * @param flipPieces if true, treat 2 as P1 and 1 as P2.
+     * @param table      precomputed binomial table.
+     * @return array of 8 indexes matching the transform order of getAllTransforms.
+     */
+    public static long[] getAllTransformIndexes(int[] board, int n, boolean flipPieces, BinomialTable table) {
+        int[][] transforms = getAllTransforms(board, n);
+        long[] indexes = new long[8];
+        for (int t = 0; t < 8; t++) {
+            indexes[t] = indexInputToFilePosition(createIndexingInput(transforms[t], flipPieces), table);
+        }
+        return indexes;
+    }
+
+    /**
      * Zero-allocation variant of filePositionToIndexingInput.
      * Writes sorted P1 positions into p1Out[0..p1Count-1] and P2 into p2Out[0..p2Count-1].
      *
