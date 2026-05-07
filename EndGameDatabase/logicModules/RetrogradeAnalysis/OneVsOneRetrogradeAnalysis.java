@@ -39,16 +39,12 @@ public class OneVsOneRetrogradeAnalysis {
     }
 
     private void initializeBoardStates() {
-        for (int i = 0; i < boardResults.length(); i++) {
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             int[] map = getMapFromIndex(i);
-            
-            if (!MoveListGenerator.getTakeMoveList(map, p1PiecesNum).isEmpty()) {
-                // 3. Use .set(index, value)
-                boardResults.set(i, Outcome.WIN.value);
-            } else {
-                boardResults.set(i, Outcome.DRAW.value);
-            }
-        }
+            boardResults.set(i, !MoveListGenerator.getTakeMoveList(map, p1PiecesNum).isEmpty()
+                ? Outcome.WIN.value
+                : Outcome.DRAW.value);
+        });
     }
 
     private void processUncertainStates() {

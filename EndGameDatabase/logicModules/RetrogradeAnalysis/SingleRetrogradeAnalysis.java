@@ -55,22 +55,19 @@ public class SingleRetrogradeAnalysis {
     }
 
     private void initializeForSingleP2Piece() {
-        for (int i = 0; i < boardResults.length(); i++) {
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
-            boolean canTake = !takeMoves.isEmpty();
-
-            boardResults.set(i, canTake ? Outcome.WIN.value : Outcome.DRAW.value);
-        }
+            boardResults.set(i, !takeMoves.isEmpty() ? Outcome.WIN.value : Outcome.DRAW.value);
+        });
     }
 
     private void initializeForSingleP1Piece() {
-        for (int i = 0; i < boardResults.length(); i++) {
+        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
-
             boardResults.set(i, evaluateP1SinglePieceState(i, takeMoves));
-        }
+        });
     }
 
     private int evaluateP1SinglePieceState(int stateIndex, List<Move> moves) {
