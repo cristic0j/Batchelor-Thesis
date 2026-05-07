@@ -85,6 +85,7 @@ public class SingleRAParallelExecutor {
             int iteration = 1;
 
             while (keepGoing) {
+                System.err.println(label + " Iteration " + iteration);
                 CompletableFuture<Boolean> passLeft = CompletableFuture.supplyAsync(() -> leftBranch.processUncertainStatesPass());
                 CompletableFuture<Boolean> passRight = CompletableFuture.supplyAsync(() -> rightBranch.processUncertainStatesPass());
 
