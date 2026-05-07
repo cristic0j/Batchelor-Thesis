@@ -261,7 +261,10 @@ public class DatabaseBuilder {
                 System.err.println("Error: expected two integers.");
                 return;
             }
+            long start = System.currentTimeMillis();
             builder.build(Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1]));
+            long elapsed = System.currentTimeMillis() - start;
+            System.err.println("Total time: " + elapsed / 1000 + "s");
         } catch (NumberFormatException e) {
             System.err.println("Error: enter two integers >= 1.");
         } catch (IOException e) {
