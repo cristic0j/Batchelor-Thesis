@@ -14,13 +14,12 @@ public class main {
 
 
         try {
-            int index = 11504881;
+            for (int i = 0; i < 1259; i++) {
+                IndexingInput mapAtIndex = Indexing.filePositionToIndexingInput(i, boardSize, 1, 1, table);
+                mapAtIndex.displayIndexInputAsAMap(boardSize);
 
-            IndexingInput mapAtIndex = Indexing.filePositionToIndexingInput(index, boardSize, 2, 4, table);
-            mapAtIndex.displayIndexInputAsAMap(boardSize);
-
-            System.err.println("Value is: "+FileReaderWriter.readValueFromFile("EndGameDatabase/data/moves2v4.txt", index));
-
+                System.err.println(i+"Value is: "+FileReaderWriter.readValueFromFile("EndGameDatabase/data/moves1v1.txt", i));
+            }
             
         } catch (IOException e) {
             System.err.println("Failed to save the database: " + e.getMessage());
@@ -29,12 +28,12 @@ public class main {
 
 
         int[] boardMap = {                                                                                                                  
-            2,0,0,0,0,2, 
-            0,1,0,0,1,0,                                                                                                                    
+            2,0,0,0,0,0, 
             0,0,0,0,0,0,                                                                                                                    
             0,0,0,0,0,0,                                                                                                                    
             0,0,0,0,0,0,                                                                                                                    
-            2,0,0,0,0,2,                                                                         
+            0,0,0,0,0,0,                                                                                                                    
+            0,0,0,0,0,1,                                                                         
         };     
 
         IndexingInput indexingInput = Indexing.createIndexingInput(boardMap, false);

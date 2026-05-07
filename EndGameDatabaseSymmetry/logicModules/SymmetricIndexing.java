@@ -57,7 +57,7 @@ public class SymmetricIndexing {
         return p;
     }
 
-    private static int[][] buildAll8Perms() {
+    public static int[][] buildAll8Perms() {
         int[] id    = identityPerm();
         int[] r90   = buildRot90Perm();
         int[] r180  = composePerm(r90, r90);
@@ -231,6 +231,23 @@ public class SymmetricIndexing {
      * @return the canonical symmetric index, or -1 if no valid transform exists
      *         (should not occur for normal endgame positions with p1Count >= 1).
      */
+    /**
+     * Returns all 8 boards obtained by applying each D4 symmetry transform to the input board.
+     *
+     * @param board flat 36-element board array (1=P1, 2=P2, 0=empty).
+     * @return array of 8 boards; index 0 is the identity (the input itself).
+     */
+    public static int[][] getAllSymmetricBoards(int[] board) {
+        int[][] result = new int[8][36];
+        for (int t = 0; t < 8; t++) {
+            int[] perm = ALL_PERMS[t];
+            for (int sq = 0; sq < 36; sq++) {
+                result[t][perm[sq]] = board[sq];
+            }
+        }
+        return result;
+    }
+
     public static long normalizeToCanonicalIndex(
         int[] boardMap, boolean flipPieces, int p1Count, int p2Count, BinomialTable table
     ) {

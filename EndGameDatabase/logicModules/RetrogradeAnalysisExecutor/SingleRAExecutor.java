@@ -40,9 +40,14 @@ public class SingleRAExecutor {
         return CompletableFuture.runAsync(() -> {
             singleBranch.initialize();
             boolean keepGoing = true;
+            int iteration = 0;
             while (keepGoing) {
+                iteration++;
+                System.err.println("[" + p1Num + "v" + p2Num + "] Iteration " + iteration);
                 keepGoing = singleBranch.processUncertainStatesPass();
             }
+            System.err.println("[" + p1Num + "v" + p2Num + "] Converged in " + iteration + " iterations.");
+            singleBranch.postProcessing();
         });
     }
 

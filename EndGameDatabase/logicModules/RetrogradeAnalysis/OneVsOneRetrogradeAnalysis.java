@@ -7,6 +7,7 @@ import EndGameDatabase.logicModules.Indexing;
 import EndGameDatabase.logicModules.MoveListGenerator;
 import dataClasses.BoardState;
 import dataClasses.Move;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
@@ -32,14 +33,61 @@ public class OneVsOneRetrogradeAnalysis {
     }
 
     public void start() {
-        System.err.println("[1v1] Starting analysis...");
+        System.err.println("[1v1] Starting pre initialization");
+        preInitialization();
+        System.err.println("[1v1] Pre initialization complete");
+
+        System.err.println("[1v1] Starting initialization");
         initializeBoardStates();
+        System.err.println("[1v1] Initialization complete");
+
+        System.err.println("[1v1] Starting processing");
         processUncertainStates();
-        System.err.println("[1v1] Analysis complete.");
+        System.err.println("[1v1] Processing complete");
+
+        System.err.println("[1v1] Starting post processing");
+        postProcessing();
+        System.err.println("[1v1] Post processing complete");
+    }
+
+    public void preInitialization(){
+        for (int i = 0; i < boardResults.length(); i++) {
+            if (boardResults.get(i) != Outcome.NON_CANONICAL_INDEX.value) {
+                int[] map = getMapFromIndex(i);
+                //get all the transform indexes (Symmetries)
+                long[] transfomIndexes = Indexing.getAllTransformIndexes(map, 6, false, table);
+                //Sort 
+                Arrays.sort(transfomIndexes);
+
+                //Lable non canonical indexes
+                boardResults.set((int)transfomIndexes[0], 2);
+                for (int j = 1; j < transfomIndexes.length; j++) {
+                    if (transfomIndexes[j] != transfomIndexes[0]) {
+                        boardResults.set((int)transfomIndexes[j], 3);
+                    }
+                }
+            }
+        }
+    }
+
+    public void postProcessing(){
+        for (int i = 0; i < boardResults.length(); i++) {
+            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) {
+                int[] map = getMapFromIndex(i);
+                long[] transformIndexes = Indexing.getAllTransformIndexes(map, 6, false, table);
+                Arrays.sort(transformIndexes);
+                boardResults.set(i, boardResults.get((int)transformIndexes[0]));
+            }
+        }
     }
 
     private void initializeBoardStates() {
         for (int i = 0; i < boardResults.length(); i++) {
+
+            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) {
+                continue;
+            }
+
             int[] map = getMapFromIndex(i);
             
             if (!MoveListGenerator.getTakeMoveList(map, p1PiecesNum).isEmpty()) {
@@ -53,9 +101,12 @@ public class OneVsOneRetrogradeAnalysis {
 
     private void processUncertainStates() {
         AtomicBoolean changed = new AtomicBoolean(true);
+        int iteration = 0;
 
         while (changed.get()) {
             changed.set(false);
+            iteration++;
+            System.err.println("[1v1] Processing iteration " + iteration);
 
             IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
                 if (boardResults.get(i) == Outcome.DRAW.value) {
@@ -67,6 +118,8 @@ public class OneVsOneRetrogradeAnalysis {
                 }
             });
         }
+
+        System.err.println("[1v1] Converged in " + iteration + " iterations.");
     }
 
     private int evaluateStateOutcome(int index) {
@@ -103,9 +156,15 @@ public class OneVsOneRetrogradeAnalysis {
     
     private int getResultOfMove(Move move) {
         BoardState boardState = MoveProcessor.movePiece(move);
-        IndexingInput p2Input = Indexing.createIndexingInput(boardState.getBoardMap(), true);
-        long filePosition = Indexing.indexInputToFilePosition(p2Input, table);        
-        return boardResults.get((int) filePosition);
+        int[] nextMap = boardState.getBoardMap();
+        long filePosition = Indexing.indexInputToFilePosition(Indexing.createIndexingInput(nextMap, true), table);
+        int result = boardResults.get((int) filePosition);
+        if (result == Outcome.NON_CANONICAL_INDEX.value) {
+            long[] transforms = Indexing.getAllTransformIndexes(nextMap, 6, true, table);
+            Arrays.sort(transforms);
+            result = boardResults.get((int) transforms[0]);
+        }
+        return result;
     }
 
     private int[] getMapFromIndex(int i) {

@@ -7,6 +7,7 @@ import EndGameDatabase.logicModules.Indexing;
 import EndGameDatabase.logicModules.MoveListGenerator;
 import dataClasses.BoardState;
 import dataClasses.Move;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
@@ -39,7 +40,39 @@ public class SingleRetrogradeAnalysis {
         this.boardResults = new AtomicIntegerArray((int)numberOfResults);
     }
 
+    public void preInitialization() {
+        System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Starting pre initialization...");
+        for (int i = 0; i < boardResults.length(); i++) {
+            if (boardResults.get(i) != Outcome.NON_CANONICAL_INDEX.value) {
+                int[] map = getMapFromIndex(i);
+                long[] transformIndexes = Indexing.getAllTransformIndexes(map, 6, false, table);
+                Arrays.sort(transformIndexes);
+                boardResults.set((int)transformIndexes[0], 2);
+                for (int j = 1; j < transformIndexes.length; j++) {
+                    if (transformIndexes[j] != transformIndexes[0]) {
+                        boardResults.set((int)transformIndexes[j], Outcome.NON_CANONICAL_INDEX.value);
+                    }
+                }
+            }
+        }
+        System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Pre initialization complete.");
+    }
+
+    public void postProcessing() {
+        System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Starting post processing...");
+        for (int i = 0; i < boardResults.length(); i++) {
+            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) {
+                int[] map = getMapFromIndex(i);
+                long[] transformIndexes = Indexing.getAllTransformIndexes(map, 6, false, table);
+                Arrays.sort(transformIndexes);
+                boardResults.set(i, boardResults.get((int)transformIndexes[0]));
+            }
+        }
+        System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Post processing complete.");
+    }
+
     public void initialize() {
+        preInitialization();
         System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Starting analysis...");
         initializeBoardStates();
         System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Initialized.");
@@ -56,6 +89,7 @@ public class SingleRetrogradeAnalysis {
 
     private void initializeForSingleP2Piece() {
         for (int i = 0; i < boardResults.length(); i++) {
+            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) continue;
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             boolean canTake = !takeMoves.isEmpty();
@@ -66,6 +100,7 @@ public class SingleRetrogradeAnalysis {
 
     private void initializeForSingleP1Piece() {
         for (int i = 0; i < boardResults.length(); i++) {
+            if (boardResults.get(i) == Outcome.NON_CANONICAL_INDEX.value) continue;
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
 
@@ -106,7 +141,6 @@ public class SingleRetrogradeAnalysis {
                 }
             }
         });
-
         return changed.get();
     }
 
@@ -158,9 +192,15 @@ public class SingleRetrogradeAnalysis {
 
     private int getResultOfMove(Move move) {
         BoardState boardState = MoveProcessor.movePiece(move);
-        IndexingInput p2Input = Indexing.createIndexingInput(boardState.getBoardMap(), true);
-        long filePosition = Indexing.indexInputToFilePosition(p2Input, table);        
-        return boardResults.get((int) filePosition);
+        int[] nextMap = boardState.getBoardMap();
+        long filePosition = Indexing.indexInputToFilePosition(Indexing.createIndexingInput(nextMap, true), table);
+        int result = boardResults.get((int) filePosition);
+        if (result == Outcome.NON_CANONICAL_INDEX.value) {
+            long[] transforms = Indexing.getAllTransformIndexes(nextMap, 6, true, table);
+            Arrays.sort(transforms);
+            result = boardResults.get((int) transforms[0]);
+        }
+        return result;
     }
 
     private int getResultOfMoveFromPrevious(Move move) {
@@ -172,9 +212,15 @@ public class SingleRetrogradeAnalysis {
 
     private int getResultOfMoveFromOpposite(Move move) {
         BoardState boardState = MoveProcessor.movePiece(move);
-        IndexingInput p2Input = Indexing.createIndexingInput(boardState.getBoardMap(), true);
-        long filePosition = Indexing.indexInputToFilePosition(p2Input, table);
-        return oppositeBoard.get((int) filePosition);
+        int[] nextMap = boardState.getBoardMap();
+        long filePosition = Indexing.indexInputToFilePosition(Indexing.createIndexingInput(nextMap, true), table);
+        int result = oppositeBoard.get((int) filePosition);
+        if (result == Outcome.NON_CANONICAL_INDEX.value) {
+            long[] transforms = Indexing.getAllTransformIndexes(nextMap, 6, true, table);
+            Arrays.sort(transforms);
+            result = oppositeBoard.get((int) transforms[0]);
+        }
+        return result;
     }
     
     private int[] getMapFromIndex(int i) {

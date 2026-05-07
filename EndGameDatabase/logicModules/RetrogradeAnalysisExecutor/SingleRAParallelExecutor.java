@@ -85,6 +85,7 @@ public class SingleRAParallelExecutor {
             int iteration = 1;
 
             while (keepGoing) {
+                System.err.println(label + " Iteration " + iteration);
                 CompletableFuture<Boolean> passLeft = CompletableFuture.supplyAsync(() -> leftBranch.processUncertainStatesPass());
                 CompletableFuture<Boolean> passRight = CompletableFuture.supplyAsync(() -> rightBranch.processUncertainStatesPass());
 
@@ -96,6 +97,11 @@ public class SingleRAParallelExecutor {
             }
 
             System.err.println(label + " Analysis complete. Converged in " + (iteration - 1) + " iterations.");
+
+            // Phase 3: Post processing (parallel)
+            CompletableFuture<Void> postLeft = CompletableFuture.runAsync(() -> leftBranch.postProcessing());
+            CompletableFuture<Void> postRight = CompletableFuture.runAsync(() -> rightBranch.postProcessing());
+            CompletableFuture.allOf(postLeft, postRight).join();
         });
     }
 
