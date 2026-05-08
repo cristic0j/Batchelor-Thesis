@@ -10,14 +10,14 @@ import dataClasses.Move;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicIntegerArray;
+import EndGameDatabase.dataClasses.AtomicByteArray;
 import java.util.stream.IntStream;
 import logicModules.MoveProcessor;
 
 public class SingleRetrogradeAnalysis {
-    private AtomicIntegerArray boardResults;
-    private AtomicIntegerArray previousBoardResults;
-    private AtomicIntegerArray oppositeBoard;
+    private AtomicByteArray boardResults;
+    private AtomicByteArray previousBoardResults;
+    private AtomicByteArray oppositeBoard;
     
     private final int p1PiecesNum;
     private final int p2PiecesNum;
@@ -29,7 +29,7 @@ public class SingleRetrogradeAnalysis {
         int p1PiecesNum, 
         int p2PiecesNum, 
         BinomialTable table, 
-        AtomicIntegerArray previousBoardResults 
+        AtomicByteArray previousBoardResults 
     ){
         this.boardSize = boardSize;
         this.p1PiecesNum = p1PiecesNum;
@@ -37,7 +37,7 @@ public class SingleRetrogradeAnalysis {
         this.table = table;
         this.previousBoardResults = previousBoardResults;
         long numberOfResults = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
-        this.boardResults = new AtomicIntegerArray((int)numberOfResults);
+        this.boardResults = new AtomicByteArray((int)numberOfResults);
     }
 
     public void preInitialization() {
@@ -233,11 +233,11 @@ public class SingleRetrogradeAnalysis {
         return p2PiecesNum;
     }
 
-    public AtomicIntegerArray getBoardResults() {
+    public AtomicByteArray getBoardResults() {
         return this.boardResults;
     }
 
-    public void setOppositeBoard(AtomicIntegerArray oppositeBoard){
+    public void setOppositeBoard(AtomicByteArray oppositeBoard){
         this.oppositeBoard = oppositeBoard;
     }
 }
