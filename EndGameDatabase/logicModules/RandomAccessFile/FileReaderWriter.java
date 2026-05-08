@@ -11,29 +11,40 @@ public class FileReaderWriter {
      * Function to write an AtomicByteArray to a RandomAccessFile.
      * Packs four 2-bit values (0-3) into a single byte.
      */
+    private static final int WRITE_CHUNK_BYTES = 1 << 22; // 4 MB chunks
+
     public static void writeToFile(String path, AtomicByteArray data, int size) throws IOException {
 
         File file = new File(path);
         File parentDir = file.getParentFile();
         if (parentDir != null && !parentDir.exists()) {
-            parentDir.mkdirs(); 
-        }
-        
-        int bytesNeeded = (size + 3) / 4;
-        byte[] buffer = new byte[bytesNeeded];
-
-        for (int i = 0; i < size; i++) {
-            int val = data.get(i) & 0b11; // Ensure only 2 bits are taken
-            int byteIdx = i / 4;
-            int shift = (3 - (i % 4)) * 2;
-            
-            // Logic: OR the shifted value into the specific byte slot
-            buffer[byteIdx] |= (byte) (val << shift);
+            parentDir.mkdirs();
         }
 
         try (RandomAccessFile raf = new RandomAccessFile(path, "rw")) {
-            raf.setLength(0); // Wipe existing file
-            raf.write(buffer);
+            raf.setLength(0);
+
+            int totalBytes = (size + 3) / 4;
+            byte[] buffer = new byte[Math.min(WRITE_CHUNK_BYTES, totalBytes)];
+            int bufIdx = 0;
+
+            for (int i = 0; i < size; i++) {
+                int val = data.get(i) & 0b11;
+                int shift = (3 - (i % 4)) * 2;
+                buffer[bufIdx] |= (byte) (val << shift);
+
+                if (i % 4 == 3) { // finished packing this byte
+                    bufIdx++;
+                    if (bufIdx == buffer.length) {
+                        raf.write(buffer, 0, bufIdx);
+                        bufIdx = 0;
+                        java.util.Arrays.fill(buffer, (byte) 0);
+                    }
+                }
+            }
+            // flush remaining partial byte (if size % 4 != 0)
+            if (size % 4 != 0) bufIdx++;
+            if (bufIdx > 0) raf.write(buffer, 0, bufIdx);
         }
     }
 
