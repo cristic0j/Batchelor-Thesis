@@ -3,7 +3,7 @@ package EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysisExecutor;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysis.SingleRetrogradeAnalysisSym;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicIntegerArray;
+import EndGameDatabase.dataClasses.AtomicByteArray;
 
 /**
  * Builds both AvB and BvA (A < B) in parallel, with each branch reading from
@@ -20,16 +20,16 @@ public class SymSingleRAParallelExecutor {
     private final SingleRetrogradeAnalysisSym leftBranch;
     private final SingleRetrogradeAnalysisSym rightBranch;
 
-    private final AtomicIntegerArray leftSingleRAResults;
-    private final AtomicIntegerArray rightSingleRAResults;
+    private final AtomicByteArray leftSingleRAResults;
+    private final AtomicByteArray rightSingleRAResults;
 
     public SymSingleRAParallelExecutor(
         int boardSize,
         BinomialTable table,
         int leftP1Num,  int leftP2Num,
         int rightP1Num, int rightP2Num,
-        AtomicIntegerArray leftPreviousResults,
-        AtomicIntegerArray rightPreviousResults
+        AtomicByteArray leftPreviousResults,
+        AtomicByteArray rightPreviousResults
     ) {
         this.boardSize  = boardSize;
         this.table      = table;
@@ -76,6 +76,6 @@ public class SymSingleRAParallelExecutor {
         });
     }
 
-    public AtomicIntegerArray getLeftBranchResults()  { return leftSingleRAResults; }
-    public AtomicIntegerArray getRightBranchResults() { return rightSingleRAResults; }
+    public AtomicByteArray getLeftBranchResults()  { return leftSingleRAResults; }
+    public AtomicByteArray getRightBranchResults() { return rightSingleRAResults; }
 }

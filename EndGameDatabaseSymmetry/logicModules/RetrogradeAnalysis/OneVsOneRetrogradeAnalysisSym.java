@@ -9,14 +9,14 @@ import dataClasses.BoardState;
 import dataClasses.Move;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicIntegerArray;
+import EndGameDatabase.dataClasses.AtomicByteArray;
 import java.util.stream.IntStream;
 import logicModules.MoveProcessor;
 
 
 
 public class OneVsOneRetrogradeAnalysisSym {
-    private AtomicIntegerArray boardResults; 
+    private AtomicByteArray boardResults; 
     private final int p1PiecesNum = 1;
     private final int p2PiecesNum = 1;
     private final int boardSize;
@@ -27,8 +27,8 @@ public class OneVsOneRetrogradeAnalysisSym {
         this.table = table;
         long numberOfResults = SymmetricIndexing.computeNumberOfPositions(p1PiecesNum, p2PiecesNum, table);
         
-        // 2. Initialize AtomicIntegerArray
-        this.boardResults = new AtomicIntegerArray((int)numberOfResults);
+        // 2. Initialize AtomicByteArray
+        this.boardResults = new AtomicByteArray((int)numberOfResults);
     }
 
     public void start() {
@@ -115,7 +115,7 @@ public class OneVsOneRetrogradeAnalysisSym {
         return input.getMapFromIndexingInput(boardSize);
     }
 
-    public AtomicIntegerArray getBoardResults() {
+    public AtomicByteArray getBoardResults() {
         return boardResults;
     }
 

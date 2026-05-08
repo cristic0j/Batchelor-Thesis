@@ -68,9 +68,11 @@ The 6x6 board is a flat `int[36]` array. Squares are indexed 0–35 (row-major).
 - `RootRetrogradeAnalysis` handles 1v1.
 - `SingleRetrogradeAnalysis` handles NvM, reading the already-computed (N−1)vM and Nv(M−1) databases as subgame oracles.
 - Outcomes: `LOSS=0`, `WIN=1`, `UNCERTAIN=2`.
-- Executor classes (`RootRAExecutor`, `SingleRAExecutor`, `SingleRAParalelExecutor`) wrap analysis in `CompletableFuture` for async/parallel execution. The parallel variant splits the index space into left/right halves using `AtomicIntegerArray` for thread safety.
+- Executor classes (`RootRAExecutor`, `SingleRAExecutor`, `SingleRAParalelExecutor`) wrap analysis in `CompletableFuture` for async/parallel execution. The parallel variant splits the index space into left/right halves using `AtomicByteArray` for thread safety.
 
 **Storage:** `FileReaderWriter` packs 4 two-bit outcomes per byte into a `RandomAccessFile`. Database files are `EndGameDatabase/data/moves<p1>v<p2>.txt`.
+
+**`AtomicByteArray`** (`EndGameDatabase/dataClasses/AtomicByteArray.java`): Custom thread-safe byte array using `VarHandle`. Replaces `AtomicIntegerArray` to reduce memory usage (1 byte per element vs 4). API mirrors `AtomicIntegerArray`: `get`, `set`, `getAndSet`, `compareAndSet`, `getAndAdd`, `getAndIncrement`, `length`. Values are unsigned 0–255.
 
 **Current state (`EndGameDatabase/main.java`):** Reads `moves1v2.txt` (21,420 positions), computes the 2v2 analysis, writes `moves2v2.txt`. Commented-out blocks show the intended sequence: 1v1 → 1v2 → 2v1 → 1v3 → 3v1 → 2v2 → ...
 

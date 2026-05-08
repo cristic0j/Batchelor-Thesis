@@ -3,15 +3,15 @@ package EndGameDatabase.logicModules.RandomAccessFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.concurrent.atomic.AtomicIntegerArray;
+import EndGameDatabase.dataClasses.AtomicByteArray;
 
 public class FileReaderWriter {
 
     /**
-     * Function to write an AtomicIntegerArray to a RandomAccessFile.
+     * Function to write an AtomicByteArray to a RandomAccessFile.
      * Packs four 2-bit values (0-3) into a single byte.
      */
-    public static void writeToFile(String path, AtomicIntegerArray data, int size) throws IOException {
+    public static void writeToFile(String path, AtomicByteArray data, int size) throws IOException {
 
         File file = new File(path);
         File parentDir = file.getParentFile();
@@ -37,7 +37,7 @@ public class FileReaderWriter {
         }
     }
 
-    public static AtomicIntegerArray readFromFile(String path, int totalValues) throws IOException {
+    public static AtomicByteArray readFromFile(String path, int totalValues) throws IOException {
         File file = new File(path);
         if (!file.exists()) {
             throw new IOException("File not found: " + path);
@@ -50,7 +50,7 @@ public class FileReaderWriter {
             raf.readFully(buffer);
         }
 
-        AtomicIntegerArray result = new AtomicIntegerArray(totalValues);
+        AtomicByteArray result = new AtomicByteArray(totalValues);
         for (int i = 0; i < totalValues; i++) {
             int byteIdx = i / 4;
             int shift = (3 - (i % 4)) * 2;

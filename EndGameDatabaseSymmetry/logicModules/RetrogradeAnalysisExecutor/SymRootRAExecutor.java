@@ -2,11 +2,11 @@ package EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysisExecutor;
 
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysis.OneVsOneRetrogradeAnalysisSym;
-import java.util.concurrent.atomic.AtomicIntegerArray;
+import EndGameDatabase.dataClasses.AtomicByteArray;
 
 public class SymRootRAExecutor {
 
-    private AtomicIntegerArray rootRAResults;
+    private AtomicByteArray rootRAResults;
     private final int boardSize;
     private final BinomialTable table;
     private final OneVsOneRetrogradeAnalysisSym analysis;
@@ -22,7 +22,7 @@ public class SymRootRAExecutor {
         this.rootRAResults = analysis.getBoardResults();
     }
 
-    public AtomicIntegerArray getBoardResults() {
+    public AtomicByteArray getBoardResults() {
         return rootRAResults;
     }
 }

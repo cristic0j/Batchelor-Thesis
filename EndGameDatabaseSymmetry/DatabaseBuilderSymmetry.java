@@ -9,7 +9,7 @@ import EndGameDatabaseSymmetry.logicModules.SymmetricIndexing;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicIntegerArray;
+import EndGameDatabase.dataClasses.AtomicByteArray;
 
 /**
  * Builds symmetric endgame database tables on demand.
@@ -122,11 +122,11 @@ public class DatabaseBuilderSymmetry {
         return (int) SymmetricIndexing.computeNumberOfPositions(p1, p2, table);
     }
 
-    private AtomicIntegerArray readFile(int p1, int p2) throws IOException {
+    private AtomicByteArray readFile(int p1, int p2) throws IOException {
         return FileReaderWriter.readFromFile(filePath(p1, p2), positionCount(p1, p2));
     }
 
-    private void writeFile(int p1, int p2, AtomicIntegerArray data) throws IOException {
+    private void writeFile(int p1, int p2, AtomicByteArray data) throws IOException {
         FileReaderWriter.writeToFile(filePath(p1, p2), data, positionCount(p1, p2));
     }
 
@@ -144,15 +144,15 @@ public class DatabaseBuilderSymmetry {
 
         } else if (a == b) {
             System.err.println("[Building] Sym " + a + "v" + b + " — symmetric single");
-            AtomicIntegerArray prev = readFile(a - 1, b);
+            AtomicByteArray prev = readFile(a - 1, b);
             SymSingleRAExecutor exec = new SymSingleRAExecutor(BOARD_SIZE, table, a, b, prev);
             exec.start().join();
             writeFile(a, b, exec.getBranchResults());
 
         } else {
             System.err.println("[Building] Sym " + a + "v" + b + " + " + b + "v" + a + " — parallel pair");
-            AtomicIntegerArray rightPrev = readFile(b - 1, a);
-            AtomicIntegerArray leftPrev  = (a == 1) ? readFile(1, 1) : readFile(a - 1, b);
+            AtomicByteArray rightPrev = readFile(b - 1, a);
+            AtomicByteArray leftPrev  = (a == 1) ? readFile(1, 1) : readFile(a - 1, b);
             SymSingleRAParallelExecutor exec = new SymSingleRAParallelExecutor(
                 BOARD_SIZE, table,
                 a, b,

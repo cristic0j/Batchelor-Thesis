@@ -9,14 +9,14 @@ import dataClasses.BoardState;
 import dataClasses.Move;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicIntegerArray;
+import EndGameDatabase.dataClasses.AtomicByteArray;
 import java.util.stream.IntStream;
 import logicModules.MoveProcessor;
 
 public class OneVsOneRetrogradeAnalysis {
 
-    // 1. Changed to AtomicIntegerArray
-    private AtomicIntegerArray boardResults; 
+    // 1. Changed to AtomicByteArray
+    private AtomicByteArray boardResults; 
     private final int p1PiecesNum = 1;
     private final int p2PiecesNum = 1;
     private final int boardSize;
@@ -27,8 +27,8 @@ public class OneVsOneRetrogradeAnalysis {
         this.table = table;
         long numberOfResults = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
         
-        // 2. Initialize AtomicIntegerArray
-        this.boardResults = new AtomicIntegerArray((int)numberOfResults);
+        // 2. Initialize AtomicByteArray
+        this.boardResults = new AtomicByteArray((int)numberOfResults);
     }
 
     public void start() {
@@ -120,8 +120,8 @@ public class OneVsOneRetrogradeAnalysis {
         }
     }
 
-    // Note: You might want to return AtomicIntegerArray or convert back to int[]
-    public AtomicIntegerArray getBoardResults(){
+    // Note: You might want to return AtomicByteArray or convert back to int[]
+    public AtomicByteArray getBoardResults(){
         return boardResults;
     }
 }

@@ -3,7 +3,7 @@ package EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysisExecutor;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysis.SingleRetrogradeAnalysisSym;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicIntegerArray;
+import EndGameDatabase.dataClasses.AtomicByteArray;
 
 public class SymSingleRAExecutor {
 
@@ -13,14 +13,14 @@ public class SymSingleRAExecutor {
     private final int p2Num;
 
     private final SingleRetrogradeAnalysisSym singleBranch;
-    private final AtomicIntegerArray singleRAResults;
+    private final AtomicByteArray singleRAResults;
 
     public SymSingleRAExecutor(
         int boardSize,
         BinomialTable table,
         int p1Num,
         int p2Num,
-        AtomicIntegerArray previousBoardResults
+        AtomicByteArray previousBoardResults
     ) {
         this.boardSize  = boardSize;
         this.table      = table;
@@ -37,7 +37,7 @@ public class SymSingleRAExecutor {
         });
     }
 
-    public AtomicIntegerArray getBranchResults() {
+    public AtomicByteArray getBranchResults() {
         return singleRAResults;
     }
 }
