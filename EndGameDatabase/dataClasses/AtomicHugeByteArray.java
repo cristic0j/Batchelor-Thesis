@@ -3,7 +3,7 @@ package EndGameDatabase.dataClasses;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
-public class AtomicHugeByteArray {
+public class AtomicHugeByteArray implements TableReader {
 
     private static final VarHandle BYTE_HANDLE =
         MethodHandles.arrayElementVarHandle(byte[].class);

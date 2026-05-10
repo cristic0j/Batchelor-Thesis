@@ -3,7 +3,13 @@ package EndGameDatabase.logicModules.RandomAccessFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import EndGameDatabase.dataClasses.TableReader;
 
 public class FileReaderWriter {
 
@@ -78,6 +84,61 @@ public class FileReaderWriter {
         }
 
         return result;
+    }
+
+    /**
+     * Opens a file for direct random-access reads without loading it into RAM.
+     * The returned OpenReader keeps a FileChannel open — call close() when done.
+     */
+    public static OpenReader openReader(String path, long totalValues) throws IOException {
+        return new OpenReader(path, totalValues);
+    }
+
+    /**
+     * A TableReader backed by an open FileChannel.
+     * FileChannel.read(ByteBuffer, long) is thread-safe for positional reads,
+     * so this can be shared across a parallel LongStream without synchronization.
+     * Each thread gets its own ByteBuffer via ThreadLocal to avoid buffer sharing.
+     */
+    public static class OpenReader implements TableReader, AutoCloseable {
+
+        private final FileChannel channel;
+        private final long totalValues;
+        private final ThreadLocal<ByteBuffer> tlBuffer =
+            ThreadLocal.withInitial(() -> ByteBuffer.allocate(1));
+
+        private OpenReader(String path, long totalValues) throws IOException {
+            this.channel = FileChannel.open(Paths.get(path), StandardOpenOption.READ);
+            this.totalValues = totalValues;
+        }
+
+        @Override
+        public int get(long index) {
+            if (index < 0 || index >= totalValues)
+                throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + totalValues);
+
+            long bytePos = index / 4;
+            int shift = (3 - (int)(index % 4)) * 2;
+
+            ByteBuffer buf = tlBuffer.get();
+            buf.clear();
+            try {
+                channel.read(buf, bytePos);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            return (buf.get(0) >> shift) & 0b11;
+        }
+
+        @Override
+        public long size() {
+            return totalValues;
+        }
+
+        @Override
+        public void close() throws IOException {
+            channel.close();
+        }
     }
 
     /**
