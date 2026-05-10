@@ -3,7 +3,7 @@ package EndGameDatabase.logicModules.RetrogradeAnalysisExecutor;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.logicModules.RetrogradeAnalysis.SingleRetrogradeAnalysis;
 import java.util.concurrent.CompletableFuture;
-import EndGameDatabase.dataClasses.AtomicByteArray;
+import EndGameDatabase.dataClasses.AtomicHugeByteArray;
 
 public class SingleRAExecutor {
 
@@ -13,9 +13,9 @@ public class SingleRAExecutor {
     private int p1Num;
     private int p2Num;
     
-    private AtomicByteArray previousBoardResults;
+    private AtomicHugeByteArray previousBoardResults;
 
-    private AtomicByteArray singleRAResults;
+    private AtomicHugeByteArray singleRAResults;
 
     private SingleRetrogradeAnalysis singleBranch;
 
@@ -24,7 +24,7 @@ public class SingleRAExecutor {
         BinomialTable table, 
         int p1Num,
         int p2Num,
-        AtomicByteArray previousBoardResults
+        AtomicHugeByteArray previousBoardResults
     ){
         this.boardSize = boardSize;
         this.table = table;
@@ -51,7 +51,7 @@ public class SingleRAExecutor {
         });
     }
 
-    public AtomicByteArray getBranchResults(){
+    public AtomicHugeByteArray getBranchResults(){
         return singleRAResults;
     }
 }

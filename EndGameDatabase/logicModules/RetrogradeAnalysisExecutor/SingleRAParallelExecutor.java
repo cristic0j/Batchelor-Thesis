@@ -3,15 +3,15 @@ package EndGameDatabase.logicModules.RetrogradeAnalysisExecutor;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.logicModules.RetrogradeAnalysis.SingleRetrogradeAnalysis;
 import java.util.concurrent.CompletableFuture;
-import EndGameDatabase.dataClasses.AtomicByteArray;
+import EndGameDatabase.dataClasses.AtomicHugeByteArray;
 
 public class SingleRAParallelExecutor {
 
     private int boardSize;
     private BinomialTable table;
 
-    private AtomicByteArray leftPreviousResults;
-    private AtomicByteArray rightPreviousResults;  
+    private AtomicHugeByteArray leftPreviousResults;
+    private AtomicHugeByteArray rightPreviousResults;  
 
     private int leftP1Num;
     private int leftP2Num;
@@ -19,8 +19,8 @@ public class SingleRAParallelExecutor {
     private int rightP1Num;
     private int rightP2Num;
 
-    private AtomicByteArray leftSingleRAResults;
-    private AtomicByteArray rightSingleRAResults;
+    private AtomicHugeByteArray leftSingleRAResults;
+    private AtomicHugeByteArray rightSingleRAResults;
 
     private SingleRetrogradeAnalysis leftBranch;
     private SingleRetrogradeAnalysis rightBranch;
@@ -32,8 +32,8 @@ public class SingleRAParallelExecutor {
         int leftP2Num, 
         int rightP1Num, 
         int rightP2Num, 
-        AtomicByteArray leftPreviousResults, 
-        AtomicByteArray rightPreviousResults
+        AtomicHugeByteArray leftPreviousResults, 
+        AtomicHugeByteArray rightPreviousResults
     ){
         this.boardSize = boardSize;
         this.table = table;
@@ -100,11 +100,11 @@ public class SingleRAParallelExecutor {
         });
     }
 
-    public AtomicByteArray getLeftBranchResults(){
+    public AtomicHugeByteArray getLeftBranchResults(){
         return leftSingleRAResults;
     }
 
-    public AtomicByteArray getRightBranchResults(){
+    public AtomicHugeByteArray getRightBranchResults(){
         return rightSingleRAResults;
     }
 }

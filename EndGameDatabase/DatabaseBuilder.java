@@ -9,7 +9,7 @@ import EndGameDatabase.logicModules.RetrogradeAnalysisExecutor.SingleRAParallelE
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import EndGameDatabase.dataClasses.AtomicByteArray;
+import EndGameDatabase.dataClasses.AtomicHugeByteArray;
 
 /**
  * Builds endgame database tables on demand.
@@ -139,15 +139,15 @@ public class DatabaseBuilder {
 
     // ── File I/O helpers ─────────────────────────────────────────────────────
 
-    private int positionCount(int p1, int p2) {
-        return (int) Indexing.computeTheNumberOfPossiblePositions(p1, p2, BOARD_SIZE, table);
+    private long positionCount(int p1, int p2) {
+        return Indexing.computeTheNumberOfPossiblePositions(p1, p2, BOARD_SIZE, table);
     }
 
-    private AtomicByteArray readFile(int p1, int p2) throws IOException {
+    private AtomicHugeByteArray readFile(int p1, int p2) throws IOException {
         return FileReaderWriter.readFromFile(filePath(p1, p2), positionCount(p1, p2));
     }
 
-    private void writeFile(int p1, int p2, AtomicByteArray data) throws IOException {
+    private void writeFile(int p1, int p2, AtomicHugeByteArray data) throws IOException {
         FileReaderWriter.writeToFile(filePath(p1, p2), data, positionCount(p1, p2));
     }
 
@@ -165,7 +165,7 @@ public class DatabaseBuilder {
 
         } else if (a == b) {
             System.err.println("[Building] " + a + "v" + b + " — symmetric single");
-            AtomicByteArray prev = readFile(a - 1, b);
+            AtomicHugeByteArray prev = readFile(a - 1, b);
             SingleRAExecutor exec = new SingleRAExecutor(BOARD_SIZE, table, a, b, prev);
             exec.start().join();
             writeFile(a, b, exec.getBranchResults());
@@ -173,8 +173,8 @@ public class DatabaseBuilder {
         } else {
             // a < b: parallel pair produces both avb and bva
             System.err.println("[Building] " + a + "v" + b + " + " + b + "v" + a + " — parallel pair");
-            AtomicByteArray rightPrev = readFile(b - 1, a);
-            AtomicByteArray leftPrev  = (a == 1) ? readFile(1, 1) : readFile(a - 1, b);
+            AtomicHugeByteArray rightPrev = readFile(b - 1, a);
+            AtomicHugeByteArray leftPrev  = (a == 1) ? readFile(1, 1) : readFile(a - 1, b);
             SingleRAParallelExecutor exec = new SingleRAParallelExecutor(
                 BOARD_SIZE, table,
                 a, b,

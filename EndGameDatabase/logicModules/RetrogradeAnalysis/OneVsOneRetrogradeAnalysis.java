@@ -9,14 +9,14 @@ import dataClasses.BoardState;
 import dataClasses.Move;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import EndGameDatabase.dataClasses.AtomicByteArray;
-import java.util.stream.IntStream;
+import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import java.util.stream.LongStream;
 import logicModules.MoveProcessor;
 
 public class OneVsOneRetrogradeAnalysis {
 
-    // 1. Changed to AtomicByteArray
-    private AtomicByteArray boardResults; 
+    // 1. Changed to AtomicHugeByteArray
+    private AtomicHugeByteArray boardResults; 
     private final int p1PiecesNum = 1;
     private final int p2PiecesNum = 1;
     private final int boardSize;
@@ -27,8 +27,8 @@ public class OneVsOneRetrogradeAnalysis {
         this.table = table;
         long numberOfResults = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
         
-        // 2. Initialize AtomicByteArray
-        this.boardResults = new AtomicByteArray((int)numberOfResults);
+        // 2. Initialize AtomicHugeByteArray
+        this.boardResults = new AtomicHugeByteArray(numberOfResults);
     }
 
     public void start() {
@@ -39,7 +39,7 @@ public class OneVsOneRetrogradeAnalysis {
     }
 
     private void initializeBoardStates() {
-        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
+        LongStream.range(0, boardResults.size()).parallel().forEach(i -> {
             int[] map = getMapFromIndex(i);
             if (!MoveListGenerator.getTakeMoveList(map, p1PiecesNum).isEmpty()) {
                 setWithSymmetry(i, Outcome.WIN.value);
@@ -55,7 +55,7 @@ public class OneVsOneRetrogradeAnalysis {
         while (changed.get()) {
             changed.set(false);
 
-            IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
+            LongStream.range(0, boardResults.size()).parallel().forEach(i -> {
                 if (boardResults.get(i) == Outcome.DRAW.value) {
                     int newResult = evaluateStateOutcome(i);
                     if (newResult != Outcome.DRAW.value) {
@@ -67,7 +67,7 @@ public class OneVsOneRetrogradeAnalysis {
         }
     }
 
-    private int evaluateStateOutcome(int index) {
+    private int evaluateStateOutcome(long index) {
         int[] map = getMapFromIndex(index);
         List<Move> simpleMoves = MoveListGenerator.getSimpleMoveList(map, p1PiecesNum);
 
@@ -103,25 +103,25 @@ public class OneVsOneRetrogradeAnalysis {
         BoardState boardState = MoveProcessor.movePiece(move);
         IndexingInput p2Input = Indexing.createIndexingInput(boardState.getBoardMap(), true);
         long filePosition = Indexing.indexInputToFilePosition(p2Input, table);        
-        return boardResults.get((int) filePosition);
+        return boardResults.get(filePosition);
     }
 
-    private int[] getMapFromIndex(int i) {
+    private int[] getMapFromIndex(long i) {
         IndexingInput input = Indexing.filePositionToIndexingInput(i, boardSize, p1PiecesNum, p2PiecesNum, table);
         return input.getMapFromIndexingInput(boardSize);
     }
 
-    private void setWithSymmetry(int index, int value) {
+    private void setWithSymmetry(long index, int value) {
         int[] map = getMapFromIndex(index);
         int n = (int) Math.sqrt(boardSize);
         long[] symIndexes = Indexing.getAllTransformIndexes(map, n, false, table);
         for (long symIdx : symIndexes) {
-            boardResults.set((int) symIdx, value);
+            boardResults.set(symIdx, value);
         }
     }
 
-    // Note: You might want to return AtomicByteArray or convert back to int[]
-    public AtomicByteArray getBoardResults(){
+    // Note: You might want to return AtomicHugeByteArray or convert back to int[]
+    public AtomicHugeByteArray getBoardResults(){
         return boardResults;
     }
 }

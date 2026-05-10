@@ -9,14 +9,14 @@ import dataClasses.BoardState;
 import dataClasses.Move;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import EndGameDatabase.dataClasses.AtomicByteArray;
-import java.util.stream.IntStream;
+import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import java.util.stream.LongStream;
 import logicModules.MoveProcessor;
 
 public class SingleRetrogradeAnalysis {
-    private AtomicByteArray boardResults;
-    private AtomicByteArray previousBoardResults;
-    private AtomicByteArray oppositeBoard;
+    private AtomicHugeByteArray boardResults;
+    private AtomicHugeByteArray previousBoardResults;
+    private AtomicHugeByteArray oppositeBoard;
     
     private final int p1PiecesNum;
     private final int p2PiecesNum;
@@ -28,7 +28,7 @@ public class SingleRetrogradeAnalysis {
         int p1PiecesNum, 
         int p2PiecesNum, 
         BinomialTable table, 
-        AtomicByteArray previousBoardResults 
+        AtomicHugeByteArray previousBoardResults 
     ){
         this.boardSize = boardSize;
         this.p1PiecesNum = p1PiecesNum;
@@ -36,7 +36,7 @@ public class SingleRetrogradeAnalysis {
         this.table = table;
         this.previousBoardResults = previousBoardResults;
         long numberOfResults = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
-        this.boardResults = new AtomicByteArray((int)numberOfResults);
+        this.boardResults = new AtomicHugeByteArray(numberOfResults);
     }
 
     public void initialize() {
@@ -55,7 +55,7 @@ public class SingleRetrogradeAnalysis {
     }
 
     private void initializeForSingleP2Piece() {
-        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
+        LongStream.range(0, boardResults.size()).parallel().forEach(i -> {
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             if (!takeMoves.isEmpty()) {
@@ -67,7 +67,7 @@ public class SingleRetrogradeAnalysis {
     }
 
     private void initializeForSingleP1Piece() {
-        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
+        LongStream.range(0, boardResults.size()).parallel().forEach(i -> {
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             int result = evaluateP1SinglePieceState(i, takeMoves);
@@ -79,7 +79,7 @@ public class SingleRetrogradeAnalysis {
         });
     }
 
-    private int evaluateP1SinglePieceState(int stateIndex, List<Move> moves) {
+    private int evaluateP1SinglePieceState(long stateIndex, List<Move> moves) {
         if (moves.isEmpty()) {
             return Outcome.DRAW.value;
         }
@@ -103,7 +103,7 @@ public class SingleRetrogradeAnalysis {
     public boolean processUncertainStatesPass() {
         AtomicBoolean changed = new AtomicBoolean(false);
 
-        IntStream.range(0, boardResults.length()).parallel().forEach(i -> {
+        LongStream.range(0, boardResults.size()).parallel().forEach(i -> {
             if (boardResults.get(i) == Outcome.DRAW.value) {
                 int newResult = evaluateStateOutcome(i);
                 if (newResult != Outcome.DRAW.value) {
@@ -117,7 +117,7 @@ public class SingleRetrogradeAnalysis {
     }
 
 
-    private int evaluateStateOutcome(int index) {
+    private int evaluateStateOutcome(long index) {
         int[] map = getMapFromIndex(index);
         List<Move> simpleMoves = MoveListGenerator.getSimpleMoveList(map, 1);
 
@@ -166,34 +166,34 @@ public class SingleRetrogradeAnalysis {
         BoardState boardState = MoveProcessor.movePiece(move);
         IndexingInput p2Input = Indexing.createIndexingInput(boardState.getBoardMap(), true);
         long filePosition = Indexing.indexInputToFilePosition(p2Input, table);        
-        return boardResults.get((int) filePosition);
+        return boardResults.get(filePosition);
     }
 
     private int getResultOfMoveFromPrevious(Move move) {
         BoardState boardState = MoveProcessor.movePiece(move);
         IndexingInput p2Input = Indexing.createIndexingInput(boardState.getBoardMap(), true);
         long filePosition = Indexing.indexInputToFilePosition(p2Input, table);
-        return previousBoardResults.get((int) filePosition);
+        return previousBoardResults.get(filePosition);
     }
 
     private int getResultOfMoveFromOpposite(Move move) {
         BoardState boardState = MoveProcessor.movePiece(move);
         IndexingInput p2Input = Indexing.createIndexingInput(boardState.getBoardMap(), true);
         long filePosition = Indexing.indexInputToFilePosition(p2Input, table);
-        return oppositeBoard.get((int) filePosition);
+        return oppositeBoard.get(filePosition);
     }
-    
-    private int[] getMapFromIndex(int i) {
+
+    private int[] getMapFromIndex(long i) {
         IndexingInput input = Indexing.filePositionToIndexingInput(i, boardSize, p1PiecesNum, p2PiecesNum, table);
         return input.getMapFromIndexingInput(boardSize);
     }
 
-    private void setWithSymmetry(int index, int value) {
+    private void setWithSymmetry(long index, int value) {
         int[] map = getMapFromIndex(index);
         int n = (int) Math.sqrt(boardSize);
         long[] symIndexes = Indexing.getAllTransformIndexes(map, n, false, table);
         for (long symIdx : symIndexes) {
-            boardResults.set((int) symIdx, value);
+            boardResults.set(symIdx, value);
         }
     }
 
@@ -205,11 +205,11 @@ public class SingleRetrogradeAnalysis {
         return p2PiecesNum;
     }
 
-    public AtomicByteArray getBoardResults() {
+    public AtomicHugeByteArray getBoardResults() {
         return this.boardResults;
     }
 
-    public void setOppositeBoard(AtomicByteArray oppositeBoard){
+    public void setOppositeBoard(AtomicHugeByteArray oppositeBoard){
         this.oppositeBoard = oppositeBoard;
     }
 }
