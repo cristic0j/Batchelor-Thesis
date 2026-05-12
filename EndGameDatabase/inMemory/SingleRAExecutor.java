@@ -38,7 +38,11 @@ public class SingleRAExecutor {
     public CompletableFuture<Void> start() {
         String label = "[" + p1Num + "v" + p2Num + "]";
         return CompletableFuture.runAsync(() -> {
+            long initStart = System.currentTimeMillis();
             singleBranch.initialize();
+            System.err.println(label + " Init: " + (System.currentTimeMillis() - initStart) + "ms");
+
+            long procStart = System.currentTimeMillis();
             boolean keepGoing = true;
             int iteration = 1;
             while (keepGoing) {
@@ -46,6 +50,7 @@ public class SingleRAExecutor {
                 keepGoing = singleBranch.processUncertainStatesPass();
                 iteration++;
             }
+            System.err.println(label + " Processing: " + (System.currentTimeMillis() - procStart) + "ms");
             System.err.println(label + " Analysis complete. Converged in " + (iteration - 1) + " iterations.");
         });
     }

@@ -73,12 +73,15 @@ public class SingleRAParallelExecutor {
         return CompletableFuture.runAsync(() -> {
 
             // Phase 1: Initialize both branches in parallel
+            long initStart = System.currentTimeMillis();
             CompletableFuture<Void> initLeft  = CompletableFuture.runAsync(() -> leftBranch.initialize());
             CompletableFuture<Void> initRight = CompletableFuture.runAsync(() -> rightBranch.initialize());
 
             CompletableFuture.allOf(initLeft, initRight).join();
+            System.err.println(label + " Init: " + (System.currentTimeMillis() - initStart) + "ms");
 
             // Phase 2: Synchronized solving loop
+            long procStart = System.currentTimeMillis();
             boolean keepGoing = true;
             int iteration = 1;
 
@@ -94,6 +97,7 @@ public class SingleRAParallelExecutor {
                 iteration++;
             }
 
+            System.err.println(label + " Processing: " + (System.currentTimeMillis() - procStart) + "ms");
             System.err.println(label + " Analysis complete. Converged in " + (iteration - 1) + " iterations.");
         });
     }
