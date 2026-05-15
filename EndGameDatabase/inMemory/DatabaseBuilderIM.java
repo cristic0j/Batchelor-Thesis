@@ -47,6 +47,10 @@ public class DatabaseBuilderIM {
         return DATA_PATH + "moves" + p1 + "v" + p2 + ".txt";
     }
 
+    private static String tempPath(int p1, int p2) {
+        return DATA_PATH + "moves" + p1 + "v" + p2 + ".tmp";
+    }
+
     private static boolean fileExists(int p1, int p2) {
         return new File(filePath(p1, p2)).exists();
     }
@@ -142,9 +146,9 @@ public class DatabaseBuilderIM {
         } else if (a == b) {
             System.err.println("[Building] " + a + "v" + b + " — symmetric single (in-memory prev)");
             AtomicHugeByteArray prev = readFile(a - 1, b);
-            SingleRAExecutor exec = new SingleRAExecutor(BOARD_SIZE, table, a, b, prev);
+            SingleRAExecutor exec = new SingleRAExecutor(BOARD_SIZE, table, a, b, prev, tempPath(a, b));
             exec.start().join();
-            writeFile(a, b, exec.getBranchResults());
+            new File(tempPath(a, b)).renameTo(new File(filePath(a, b)));
 
         } else {
             // a < b: parallel pair produces both avb and bva
@@ -155,11 +159,13 @@ public class DatabaseBuilderIM {
                 BOARD_SIZE, table,
                 a, b,
                 b, a,
-                leftPrev, rightPrev
+                leftPrev, rightPrev,
+                tempPath(a, b),
+                tempPath(b, a)
             );
             exec.start().join();
-            writeFile(a, b, exec.getLeftBranchResults());
-            writeFile(b, a, exec.getRightBranchResults());
+            new File(tempPath(a, b)).renameTo(new File(filePath(a, b)));
+            new File(tempPath(b, a)).renameTo(new File(filePath(b, a)));
         }
 
         System.err.println("[Done]     " + key);

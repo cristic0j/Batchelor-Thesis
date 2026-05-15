@@ -2,6 +2,7 @@ package EndGameDatabase.inMemory;
 
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
 public class SingleRAExecutor {
@@ -13,6 +14,7 @@ public class SingleRAExecutor {
     private int p2Num;
 
     private AtomicHugeByteArray previousBoardResults;
+    private String checkpointPath;
 
     private AtomicHugeByteArray singleRAResults;
 
@@ -23,13 +25,15 @@ public class SingleRAExecutor {
         BinomialTable table,
         int p1Num,
         int p2Num,
-        AtomicHugeByteArray previousBoardResults
+        AtomicHugeByteArray previousBoardResults,
+        String checkpointPath
     ){
         this.boardSize = boardSize;
         this.table = table;
         this.p1Num = p1Num;
         this.p2Num = p2Num;
         this.previousBoardResults = previousBoardResults;
+        this.checkpointPath = checkpointPath;
         singleBranch = new SingleRetrogradeAnalysis(boardSize, p1Num, p2Num, table, previousBoardResults);
 
         singleRAResults = singleBranch.getBoardResults();
@@ -38,9 +42,22 @@ public class SingleRAExecutor {
     public CompletableFuture<Void> start() {
         String label = "[" + p1Num + "v" + p2Num + "]";
         return CompletableFuture.runAsync(() -> {
-            long initStart = System.currentTimeMillis();
-            singleBranch.initialize();
-            System.err.println(label + " Init: " + (System.currentTimeMillis() - initStart) + "ms");
+            boolean resumed = false;
+            if (checkpointPath != null && new File(checkpointPath).exists()) {
+                try {
+                    singleBranch.loadFromCheckpoint(checkpointPath);
+                    resumed = true;
+                    System.err.println(label + " Resumed from checkpoint.");
+                } catch (Exception e) {
+                    System.err.println(label + " Checkpoint load failed, starting fresh: " + e.getMessage());
+                }
+            }
+
+            if (!resumed) {
+                long initStart = System.currentTimeMillis();
+                singleBranch.initialize();
+                System.err.println(label + " Init: " + (System.currentTimeMillis() - initStart) + "ms");
+            }
 
             long procStart = System.currentTimeMillis();
             boolean keepGoing = true;
@@ -48,6 +65,9 @@ public class SingleRAExecutor {
             while (keepGoing) {
                 System.err.println(label + " Iteration " + iteration);
                 keepGoing = singleBranch.processUncertainStatesPass();
+                if (checkpointPath != null) {
+                    singleBranch.saveCheckpoint(checkpointPath);
+                }
                 iteration++;
             }
             System.err.println(label + " Processing: " + (System.currentTimeMillis() - procStart) + "ms");

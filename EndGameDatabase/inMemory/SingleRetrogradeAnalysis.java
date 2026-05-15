@@ -5,8 +5,13 @@ import EndGameDatabase.dataClasses.IndexingInput;
 import EndGameDatabase.dataClasses.Outcome;
 import EndGameDatabase.logicModules.Indexing;
 import EndGameDatabase.logicModules.MoveListGenerator;
+import EndGameDatabase.logicModules.RandomAccessFile.FileReaderWriter;
 import dataClasses.BoardState;
 import dataClasses.Move;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
@@ -208,5 +213,19 @@ public class SingleRetrogradeAnalysis {
 
     public void setOppositeBoard(AtomicHugeByteArray oppositeBoard) {
         this.oppositeBoard = oppositeBoard;
+    }
+
+    public void loadFromCheckpoint(String path) throws IOException {
+        FileReaderWriter.readIntoArray(path, boardResults);
+    }
+
+    public void saveCheckpoint(String path) {
+        try {
+            String tmp = path + ".tmp";
+            FileReaderWriter.writeToFile(tmp, boardResults, boardResults.size());
+            Files.move(Paths.get(tmp), Paths.get(path), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Checkpoint save failed: " + e.getMessage());
+        }
     }
 }

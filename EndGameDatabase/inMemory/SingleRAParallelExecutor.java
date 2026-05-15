@@ -2,6 +2,7 @@ package EndGameDatabase.inMemory;
 
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
 public class SingleRAParallelExecutor {
@@ -18,6 +19,9 @@ public class SingleRAParallelExecutor {
     private int rightP1Num;
     private int rightP2Num;
 
+    private String leftCheckpointPath;
+    private String rightCheckpointPath;
+
     private AtomicHugeByteArray leftSingleRAResults;   // in-RAM: being built
     private AtomicHugeByteArray rightSingleRAResults;  // in-RAM: being built
 
@@ -32,7 +36,9 @@ public class SingleRAParallelExecutor {
         int rightP1Num,
         int rightP2Num,
         AtomicHugeByteArray leftPreviousResults,
-        AtomicHugeByteArray rightPreviousResults
+        AtomicHugeByteArray rightPreviousResults,
+        String leftCheckpointPath,
+        String rightCheckpointPath
     ){
         this.boardSize = boardSize;
         this.table = table;
@@ -42,6 +48,8 @@ public class SingleRAParallelExecutor {
         this.rightP2Num = rightP2Num;
         this.leftPreviousResults = leftPreviousResults;
         this.rightPreviousResults = rightPreviousResults;
+        this.leftCheckpointPath = leftCheckpointPath;
+        this.rightCheckpointPath = rightCheckpointPath;
 
         leftBranch = new SingleRetrogradeAnalysis(
             boardSize,
@@ -71,14 +79,36 @@ public class SingleRAParallelExecutor {
         System.err.println(label + " Starting parallel analysis...");
 
         return CompletableFuture.runAsync(() -> {
+            boolean bothCheckpointsExist = leftCheckpointPath != null
+                && new File(leftCheckpointPath).exists()
+                && new File(rightCheckpointPath).exists();
 
-            // Phase 1: Initialize both branches in parallel
-            long initStart = System.currentTimeMillis();
-            CompletableFuture<Void> initLeft  = CompletableFuture.runAsync(() -> leftBranch.initialize());
-            CompletableFuture<Void> initRight = CompletableFuture.runAsync(() -> rightBranch.initialize());
+            if (bothCheckpointsExist) {
+                try {
+                    CompletableFuture<Void> loadLeft  = CompletableFuture.runAsync(() -> {
+                        try { leftBranch.loadFromCheckpoint(leftCheckpointPath); }
+                        catch (Exception e) { throw new RuntimeException(e); }
+                    });
+                    CompletableFuture<Void> loadRight = CompletableFuture.runAsync(() -> {
+                        try { rightBranch.loadFromCheckpoint(rightCheckpointPath); }
+                        catch (Exception e) { throw new RuntimeException(e); }
+                    });
+                    CompletableFuture.allOf(loadLeft, loadRight).join();
+                    System.err.println(label + " Resumed from checkpoint.");
+                } catch (Exception e) {
+                    System.err.println(label + " Checkpoint load failed, starting fresh: " + e.getMessage());
+                    bothCheckpointsExist = false;
+                }
+            }
 
-            CompletableFuture.allOf(initLeft, initRight).join();
-            System.err.println(label + " Init: " + (System.currentTimeMillis() - initStart) + "ms");
+            if (!bothCheckpointsExist) {
+                // Phase 1: Initialize both branches in parallel
+                long initStart = System.currentTimeMillis();
+                CompletableFuture<Void> initLeft  = CompletableFuture.runAsync(() -> leftBranch.initialize());
+                CompletableFuture<Void> initRight = CompletableFuture.runAsync(() -> rightBranch.initialize());
+                CompletableFuture.allOf(initLeft, initRight).join();
+                System.err.println(label + " Init: " + (System.currentTimeMillis() - initStart) + "ms");
+            }
 
             // Phase 2: Synchronized solving loop
             long procStart = System.currentTimeMillis();
@@ -92,6 +122,11 @@ public class SingleRAParallelExecutor {
 
                 boolean leftChanged  = passLeft.join();
                 boolean rightChanged = passRight.join();
+
+                if (leftCheckpointPath != null) {
+                    leftBranch.saveCheckpoint(leftCheckpointPath);
+                    rightBranch.saveCheckpoint(rightCheckpointPath);
+                }
 
                 keepGoing = leftChanged || rightChanged;
                 iteration++;

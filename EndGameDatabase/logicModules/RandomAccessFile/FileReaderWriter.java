@@ -142,6 +142,35 @@ public class FileReaderWriter {
     }
 
     /**
+     * Reads a packed file into an existing AtomicHugeByteArray without allocating a new one.
+     * Used for checkpoint resume.
+     */
+    public static void readIntoArray(String path, AtomicHugeByteArray dest) throws IOException {
+        long totalValues = dest.size();
+        long bytesToRead = (totalValues + 3) / 4;
+        byte[] buffer = new byte[(int) Math.min(WRITE_CHUNK_BYTES, bytesToRead)];
+
+        try (RandomAccessFile raf = new RandomAccessFile(path, "r")) {
+            long bytePos = 0;
+            while (bytePos < bytesToRead) {
+                int toRead = (int) Math.min(buffer.length, bytesToRead - bytePos);
+                raf.readFully(buffer, 0, toRead);
+                for (int b = 0; b < toRead; b++) {
+                    long baseIdx = (bytePos + b) * 4;
+                    for (int bit = 0; bit < 4; bit++) {
+                        long idx = baseIdx + bit;
+                        if (idx >= totalValues) break;
+                        int shift = (3 - bit) * 2;
+                        int val = (buffer[b] >> shift) & 0b11;
+                        dest.set(idx, val);
+                    }
+                }
+                bytePos += toRead;
+            }
+        }
+    }
+
+    /**
      * Function to read a specific 2-bit value from a file.
      */
     public static int readValueFromFile(String path, long index) throws IOException {
