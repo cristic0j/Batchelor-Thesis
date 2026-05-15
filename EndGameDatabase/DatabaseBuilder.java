@@ -1,7 +1,6 @@
 package EndGameDatabase;
 
 import EndGameDatabase.inMemory.DatabaseBuilderIM;
-import EndGameDatabase.prevOnDisk.DatabaseBuilderPOD;
 import EndGameDatabase.diskBacked.DatabaseBuilderDB;
 import EndGameDatabase.ramPrevDiskCurrent.DatabaseBuilderRPDC;
 import java.io.IOException;
@@ -11,14 +10,13 @@ import java.util.*;
  * Main entry point for the Surakarta endgame database builder.
  *
  * Delegates to one of three implementations:
- *   --im           In-memory mode       (default): previous tables fully loaded into RAM
- *   --pod          Prev-on-disk mode:             previous tables read directly from disk
+ *   --im           In-memory mode       (default): all tables fully loaded into RAM
  *   --rpdc[=N]     RAM-prev disk-current mode:    previous in RAM, current in disk chunks of N
  *   --db[=N]       Disk-backed mode:              both previous on disk, current in disk chunks of N
  *                                                 (default N = 2^31 for --rpdc and --db)
  *
  * Usage:
- *   java -Xmx4G   -cp bin EndGameDatabase.DatabaseBuilder <p1> <p2> [--im|--pod]
+ *   java -Xmx4G   -cp bin EndGameDatabase.DatabaseBuilder <p1> <p2> [--im]
  *   java -Xmx4G   -cp bin EndGameDatabase.DatabaseBuilder <p1> <p2> --rpdc
  *   java -Xmx512M -cp bin EndGameDatabase.DatabaseBuilder <p1> <p2> --db
  *   java -Xmx512M -cp bin EndGameDatabase.DatabaseBuilder <p1> <p2> --db=268435456
@@ -29,7 +27,6 @@ public class DatabaseBuilder {
     public static void main(String[] args) {
         List<String> argList = new ArrayList<>(Arrays.asList(args));
 
-        boolean prevOnDisk = argList.remove("--pod");
         argList.remove("--im");
 
         // Check for --db[=N], --rpdc[=N]
@@ -58,8 +55,6 @@ public class DatabaseBuilder {
                 DatabaseBuilderDB.main(withChunk);
             } else if (ramPrevDiskCurrent) {
                 DatabaseBuilderRPDC.main(withChunk);
-            } else if (prevOnDisk) {
-                DatabaseBuilderPOD.main(remaining);
             } else {
                 DatabaseBuilderIM.main(remaining);
             }
@@ -69,14 +64,13 @@ public class DatabaseBuilder {
         // Interactive mode
         Scanner scanner = new Scanner(System.in);
         System.out.println("=== Surakarta Endgame Database Builder ===");
-        System.out.println("Mode: [1] in-memory (default)  [2] prev-on-disk  [3] RAM-prev disk-current  [4] disk-backed");
+        System.out.println("Mode: [1] in-memory (default)  [2] RAM-prev disk-current  [3] disk-backed");
         System.out.print("> ");
 
         try {
             String modeLine = scanner.nextLine().trim();
-            boolean usePrevOnDisk       = modeLine.equals("2") || modeLine.equalsIgnoreCase("pod");
-            boolean useRamPrevDiskCurrent = modeLine.equals("3") || modeLine.equalsIgnoreCase("rpdc");
-            boolean useDiskBacked       = modeLine.equals("4") || modeLine.equalsIgnoreCase("db");
+            boolean useRamPrevDiskCurrent = modeLine.equals("2") || modeLine.equalsIgnoreCase("rpdc");
+            boolean useDiskBacked       = modeLine.equals("3") || modeLine.equalsIgnoreCase("db");
 
             if (useRamPrevDiskCurrent || useDiskBacked) {
                 System.out.println("Chunk size in positions [default " + DatabaseBuilderDB.DEFAULT_CHUNK_SIZE + "]:");
@@ -104,8 +98,6 @@ public class DatabaseBuilder {
                     new DatabaseBuilderDB(chunkSize).build(p1, p2);
                 } else if (useRamPrevDiskCurrent) {
                     new DatabaseBuilderRPDC(chunkSize).build(p1, p2);
-                } else if (usePrevOnDisk) {
-                    new DatabaseBuilderPOD().build(p1, p2);
                 } else {
                     new DatabaseBuilderIM().build(p1, p2);
                 }

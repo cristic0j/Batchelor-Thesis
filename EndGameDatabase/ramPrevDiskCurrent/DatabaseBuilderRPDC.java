@@ -26,21 +26,14 @@ public class DatabaseBuilderRPDC {
 
     private static final int BOARD_SIZE = 36;
     private static final String DATA_PATH = "EndGameDatabase/data/";
-    public static final long DEFAULT_CHUNK_SIZE      = 1L << 31;
-    public static final long DEFAULT_FLUSH_THRESHOLD = 1_000_000L;
+    public static final long DEFAULT_CHUNK_SIZE = 1L << 31;
 
     private final BinomialTable table;
     private final long chunkSize;
-    private final long flushThreshold;
-
-    public DatabaseBuilderRPDC(long chunkSize, long flushThreshold) {
-        this.table = new BinomialTable(BOARD_SIZE);
-        this.chunkSize = chunkSize;
-        this.flushThreshold = flushThreshold;
-    }
 
     public DatabaseBuilderRPDC(long chunkSize) {
-        this(chunkSize, DEFAULT_FLUSH_THRESHOLD);
+        this.table = new BinomialTable(BOARD_SIZE);
+        this.chunkSize = chunkSize;
     }
 
     // ── Key helpers ──────────────────────────────────────────────────────────
@@ -152,7 +145,7 @@ public class DatabaseBuilderRPDC {
         } else if (a == b) {
             System.err.println("[Building] " + a + "v" + b + " — symmetric single (RAM prev, disk current, chunkSize=" + chunkSize + ")");
             AtomicHugeByteArray prev = readFileIntoRam(a - 1, b);
-            SingleRAExecutor exec = new SingleRAExecutor(BOARD_SIZE, table, a, b, prev, tempPath(a, b), chunkSize, flushThreshold);
+            SingleRAExecutor exec = new SingleRAExecutor(BOARD_SIZE, table, a, b, prev, tempPath(a, b), chunkSize);
             exec.start().join();
             new File(tempPath(a, b)).renameTo(new File(filePath(a, b)));
 
@@ -167,8 +160,7 @@ public class DatabaseBuilderRPDC {
                 leftPrev, rightPrev,
                 tempPath(a, b),
                 tempPath(b, a),
-                chunkSize,
-                flushThreshold
+                chunkSize
             );
             exec.start().join();
             new File(tempPath(a, b)).renameTo(new File(filePath(a, b)));

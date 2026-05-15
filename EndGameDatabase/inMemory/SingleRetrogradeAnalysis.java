@@ -51,6 +51,7 @@ public class SingleRetrogradeAnalysis {
     }
 
     private void initializeBoardStates() {
+        LongStream.range(0, boardResults.size()).parallel().forEach(i -> boardResults.set(i, Outcome.DRAW.value));
         if (p2PiecesNum == 1) {
             initializeForSingleP2Piece();
         } else {
@@ -60,25 +61,23 @@ public class SingleRetrogradeAnalysis {
 
     private void initializeForSingleP2Piece() {
         LongStream.range(0, boardResults.size()).parallel().forEach(i -> {
+            if (boardResults.get(i) != Outcome.DRAW.value) return;
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             if (!takeMoves.isEmpty()) {
                 setWithSymmetry(i, Outcome.WIN.value);
-            } else {
-                boardResults.set(i, Outcome.DRAW.value);
             }
         });
     }
 
     private void initializeForSingleP1Piece() {
         LongStream.range(0, boardResults.size()).parallel().forEach(i -> {
+            if (boardResults.get(i) != Outcome.DRAW.value) return;
             int[] map = getMapFromIndex(i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             int result = evaluateP1SinglePieceState(i, takeMoves);
             if (result == Outcome.WIN.value) {
                 setWithSymmetry(i, result);
-            } else {
-                boardResults.set(i, result);
             }
         });
     }

@@ -12,10 +12,7 @@ import dataClasses.BoardState;
 import dataClasses.Move;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.LongStream;
 import logicModules.MoveProcessor;
@@ -27,7 +24,6 @@ public class SingleRetrogradeAnalysis {
     private final int boardSize;
     private final BinomialTable table;
     private final long chunkSize;
-    private final long flushThreshold;
     private final long totalPositions;
     private final String workingFilePath;
     private final TableReader previousBoardResults;
@@ -39,9 +35,6 @@ public class SingleRetrogradeAnalysis {
     private volatile long currentWindowSize = 0;
     private volatile FileReaderWriter.OpenReader selfReader = null;
 
-    // Deferred symmetric writes for positions outside the current window
-    private final ConcurrentHashMap<Long, Integer> deferredWrites = new ConcurrentHashMap<>();
-
     public SingleRetrogradeAnalysis(
         int boardSize,
         int p1PiecesNum,
@@ -49,8 +42,7 @@ public class SingleRetrogradeAnalysis {
         BinomialTable table,
         TableReader previousBoardResults,
         String workingFilePath,
-        long chunkSize,
-        long flushThreshold
+        long chunkSize
     ) {
         this.boardSize = boardSize;
         this.p1PiecesNum = p1PiecesNum;
@@ -59,7 +51,6 @@ public class SingleRetrogradeAnalysis {
         this.previousBoardResults = previousBoardResults;
         this.workingFilePath = workingFilePath;
         this.chunkSize = chunkSize;
-        this.flushThreshold = flushThreshold;
         this.totalPositions = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
         this.windowBuffer = new AtomicHugeByteArray(Math.min(chunkSize, totalPositions));
     }
@@ -70,7 +61,6 @@ public class SingleRetrogradeAnalysis {
 
         long pos = 0;
         while (pos < totalPositions) {
-            flushDeferredWrites();
             long wSize = Math.min(chunkSize, totalPositions - pos);
             windowStart = pos;
             currentWindowSize = wSize;
@@ -87,29 +77,26 @@ public class SingleRetrogradeAnalysis {
             FileReaderWriter.writeWindow(workingFilePath, pos, wSize, windowBuffer);
             pos += chunkSize;
         }
-        flushDeferredWrites();
         System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Initialized.");
     }
 
     private void initSingleP2Window(long wStart, long wSize) {
         LongStream.range(0, wSize).parallel().forEach(i -> {
-            long absIdx = wStart + i;
-            int[] map = getMapFromIndex(absIdx);
+            int[] map = getMapFromIndex(wStart + i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             if (!takeMoves.isEmpty()) {
-                setWithSymmetryInBuffer(absIdx, Outcome.WIN.value);
+                windowBuffer.set(i, Outcome.WIN.value);
             }
         });
     }
 
     private void initSingleP1Window(long wStart, long wSize) {
         LongStream.range(0, wSize).parallel().forEach(i -> {
-            long absIdx = wStart + i;
-            int[] map = getMapFromIndex(absIdx);
+            int[] map = getMapFromIndex(wStart + i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             int result = evaluateP1SinglePieceState(takeMoves);
             if (result == Outcome.WIN.value) {
-                setWithSymmetryInBuffer(absIdx, result);
+                windowBuffer.set(i, result);
             }
         });
     }
@@ -130,7 +117,6 @@ public class SingleRetrogradeAnalysis {
 
             long pos = 0;
             while (pos < totalPositions) {
-                flushDeferredWrites();
                 long wSize = Math.min(chunkSize, totalPositions - pos);
                 FileReaderWriter.readWindow(workingFilePath, pos, wSize, windowBuffer);
                 windowStart = pos;
@@ -143,7 +129,7 @@ public class SingleRetrogradeAnalysis {
                     if (windowBuffer.get(i) == Outcome.DRAW.value) {
                         int newResult = evaluateStateOutcome(wStart + i);
                         if (newResult != Outcome.DRAW.value) {
-                            setWithSymmetryInBuffer(wStart + i, newResult);
+                            windowBuffer.set(i, newResult);
                             changed.set(true);
                         }
                     }
@@ -154,7 +140,6 @@ public class SingleRetrogradeAnalysis {
             }
         } finally {
             selfReader = null;
-            flushDeferredWrites();
         }
 
         return changed.get();
@@ -224,47 +209,6 @@ public class SingleRetrogradeAnalysis {
     private int[] getMapFromIndex(long i) {
         return Indexing.filePositionToIndexingInput(i, boardSize, p1PiecesNum, p2PiecesNum, table)
                        .getMapFromIndexingInput(boardSize);
-    }
-
-    private void setInBuffer(long absPosition, int value) {
-        if (absPosition >= windowStart && absPosition < windowStart + currentWindowSize) {
-            windowBuffer.set(absPosition - windowStart, value);
-        } else {
-            deferredWrites.put(absPosition, value);
-            if (deferredWrites.size() >= flushThreshold) {
-                flushDeferredWrites();
-            }
-        }
-    }
-
-    private void setWithSymmetryInBuffer(long index, int value) {
-        int[] map = getMapFromIndex(index);
-        int n = (int) Math.sqrt(boardSize);
-        long[] symIndexes = Indexing.getAllTransformIndexes(map, n, false, table);
-        for (long symIdx : symIndexes) {
-            setInBuffer(symIdx, value);
-        }
-    }
-
-    private synchronized void flushDeferredWrites() {
-        if (deferredWrites.isEmpty()) return;
-
-        // Drain entries atomically per key
-        List<Map.Entry<Long, Integer>> toFlush = new ArrayList<>(deferredWrites.size());
-        deferredWrites.forEach((k, v) -> {
-            if (deferredWrites.remove(k, v)) toFlush.add(Map.entry(k, v));
-        });
-
-        if (toFlush.isEmpty()) return;
-
-        toFlush.sort(Map.Entry.comparingByKey());
-
-        try {
-            FileReaderWriter.writeScattered(workingFilePath, toFlush);
-        } catch (IOException e) {
-            System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Deferred flush failed: " + e.getMessage());
-        }
-        System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Flushed " + toFlush.size() + " deferred symmetric writes.");
     }
 
     public void setOppositeBoard(TableReader oppositeBoard) {
