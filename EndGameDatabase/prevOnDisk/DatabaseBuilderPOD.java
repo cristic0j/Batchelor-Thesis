@@ -1,4 +1,4 @@
-package EndGameDatabase.fileBacked;
+package EndGameDatabase.prevOnDisk;
 
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
@@ -21,14 +21,14 @@ import java.util.*;
  *   java -Xmx4G -cp bin EndGameDatabase.fileBacked.DatabaseBuilderFB <p1> <p2>
  *   java -Xmx4G -cp bin EndGameDatabase.fileBacked.DatabaseBuilderFB   (interactive)
  */
-public class DatabaseBuilderFB {
+public class DatabaseBuilderPOD {
 
     private static final int BOARD_SIZE = 36;
     private static final String DATA_PATH = "EndGameDatabase/data/";
 
     private final BinomialTable table;
 
-    public DatabaseBuilderFB() {
+    public DatabaseBuilderPOD() {
         this.table = new BinomialTable(BOARD_SIZE);
     }
 
@@ -217,7 +217,7 @@ public class DatabaseBuilderFB {
     // ── Entry point ──────────────────────────────────────────────────────────
 
     public static void main(String[] args) {
-        DatabaseBuilderFB builder = new DatabaseBuilderFB();
+        DatabaseBuilderPOD builder = new DatabaseBuilderPOD();
 
         if (args.length >= 2) {
             try {

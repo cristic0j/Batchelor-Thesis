@@ -1,4 +1,4 @@
-package EndGameDatabase.fileBacked;
+package EndGameDatabase.prevOnDisk;
 
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.IndexingInput;

@@ -171,6 +171,93 @@ public class FileReaderWriter {
     }
 
     /**
+     * Creates a file of the correct packed size, all values set to fillValue.
+     * chunkSize must be a multiple of 4 so that startPos is always byte-aligned.
+     */
+    public static void createPrefilled(String path, long totalValues, int fillValue) throws IOException {
+        File file = new File(path);
+        File parentDir = file.getParentFile();
+        if (parentDir != null && !parentDir.exists()) parentDir.mkdirs();
+
+        long totalBytes = (totalValues + 3) / 4;
+        int v = fillValue & 0b11;
+        byte fillByte = (byte) ((v << 6) | (v << 4) | (v << 2) | v);
+        byte[] buffer = new byte[(int) Math.min(WRITE_CHUNK_BYTES, totalBytes)];
+        java.util.Arrays.fill(buffer, fillByte);
+
+        try (RandomAccessFile raf = new RandomAccessFile(path, "rw")) {
+            raf.setLength(0);
+            long written = 0;
+            while (written < totalBytes) {
+                int toWrite = (int) Math.min(buffer.length, totalBytes - written);
+                raf.write(buffer, 0, toWrite);
+                written += toWrite;
+            }
+        }
+    }
+
+    /**
+     * Reads a window of `count` positions starting at `startPos` from a packed file into dest.
+     * startPos must be a multiple of 4 for byte alignment.
+     */
+    public static void readWindow(String path, long startPos, long count, AtomicHugeByteArray dest) throws IOException {
+        long startByte = startPos / 4;
+        long byteCount = (count + 3) / 4;
+        byte[] buffer = new byte[(int) Math.min(WRITE_CHUNK_BYTES, byteCount)];
+
+        try (RandomAccessFile raf = new RandomAccessFile(path, "r")) {
+            raf.seek(startByte);
+            long bytePos = 0;
+            while (bytePos < byteCount) {
+                int toRead = (int) Math.min(buffer.length, byteCount - bytePos);
+                raf.readFully(buffer, 0, toRead);
+                for (int b = 0; b < toRead; b++) {
+                    long baseIdx = (bytePos + b) * 4;
+                    for (int bit = 0; bit < 4; bit++) {
+                        long idx = baseIdx + bit;
+                        if (idx >= count) break;
+                        int shift = (3 - bit) * 2;
+                        int val = (buffer[b] >> shift) & 0b11;
+                        dest.set(idx, val);
+                    }
+                }
+                bytePos += toRead;
+            }
+        }
+    }
+
+    /**
+     * Writes a window of `count` positions from src back into the packed file at startPos.
+     * startPos must be a multiple of 4 for byte alignment.
+     */
+    public static void writeWindow(String path, long startPos, long count, AtomicHugeByteArray src) throws IOException {
+        long startByte = startPos / 4;
+        long totalBytes = (count + 3) / 4;
+        byte[] buffer = new byte[(int) Math.min(WRITE_CHUNK_BYTES, totalBytes)];
+        int bufIdx = 0;
+
+        try (RandomAccessFile raf = new RandomAccessFile(path, "rw")) {
+            raf.seek(startByte);
+            for (long i = 0; i < count; i++) {
+                int val = src.get(i) & 0b11;
+                int shift = (3 - (int)(i % 4)) * 2;
+                buffer[bufIdx] |= (byte)(val << shift);
+
+                if (i % 4 == 3) {
+                    bufIdx++;
+                    if (bufIdx == buffer.length) {
+                        raf.write(buffer, 0, bufIdx);
+                        bufIdx = 0;
+                        java.util.Arrays.fill(buffer, (byte) 0);
+                    }
+                }
+            }
+            if (count % 4 != 0) bufIdx++;
+            if (bufIdx > 0) raf.write(buffer, 0, bufIdx);
+        }
+    }
+
+    /**
      * Function to read a specific 2-bit value from a file.
      */
     public static int readValueFromFile(String path, long index) throws IOException {
