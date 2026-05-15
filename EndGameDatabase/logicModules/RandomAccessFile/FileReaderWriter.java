@@ -8,6 +8,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.Map;
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
 import EndGameDatabase.dataClasses.TableReader;
 
@@ -166,6 +168,43 @@ public class FileReaderWriter {
                     }
                 }
                 bytePos += toRead;
+            }
+        }
+    }
+
+    /**
+     * Writes scattered 2-bit values at arbitrary positions in a packed file.
+     * Entries must be sorted by position for sequential disk access.
+     * Positions sharing a byte are batched into a single read-modify-write.
+     */
+    public static void writeScattered(String path, List<Map.Entry<Long, Integer>> sortedEntries) throws IOException {
+        if (sortedEntries.isEmpty()) return;
+        try (RandomAccessFile raf = new RandomAccessFile(path, "rw")) {
+            long prevBytePos = -1;
+            int currentByte  = 0;
+
+            for (java.util.Map.Entry<Long, Integer> e : sortedEntries) {
+                long pos   = e.getKey();
+                int  val   = e.getValue() & 0b11;
+                long bytePos = pos / 4;
+                int  shift   = (3 - (int)(pos % 4)) * 2;
+
+                if (bytePos != prevBytePos) {
+                    if (prevBytePos >= 0) {
+                        raf.seek(prevBytePos);
+                        raf.write(currentByte);
+                    }
+                    raf.seek(bytePos);
+                    currentByte = raf.read() & 0xFF;
+                    prevBytePos = bytePos;
+                }
+
+                currentByte = (currentByte & ~(0b11 << shift)) | (val << shift);
+            }
+
+            if (prevBytePos >= 0) {
+                raf.seek(prevBytePos);
+                raf.write(currentByte);
             }
         }
     }

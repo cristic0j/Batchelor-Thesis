@@ -19,9 +19,6 @@ public class SingleRAParallelExecutor {
     private final int rightP1Num;
     private final int rightP2Num;
 
-    private final TableReader leftPreviousResults;
-    private final TableReader rightPreviousResults;
-
     private final String leftWorkingFilePath;
     private final String rightWorkingFilePath;
 
@@ -39,7 +36,8 @@ public class SingleRAParallelExecutor {
         TableReader rightPreviousResults,
         String leftWorkingFilePath,
         String rightWorkingFilePath,
-        long chunkSize
+        long chunkSize,
+        long flushThreshold
     ) {
         this.boardSize = boardSize;
         this.table = table;
@@ -48,13 +46,11 @@ public class SingleRAParallelExecutor {
         this.leftP2Num = leftP2Num;
         this.rightP1Num = rightP1Num;
         this.rightP2Num = rightP2Num;
-        this.leftPreviousResults = leftPreviousResults;
-        this.rightPreviousResults = rightPreviousResults;
         this.leftWorkingFilePath = leftWorkingFilePath;
         this.rightWorkingFilePath = rightWorkingFilePath;
 
-        leftBranch = new SingleRetrogradeAnalysis(boardSize, leftP1Num, leftP2Num, table, rightPreviousResults, leftWorkingFilePath, chunkSize);
-        rightBranch = new SingleRetrogradeAnalysis(boardSize, rightP1Num, rightP2Num, table, leftPreviousResults, rightWorkingFilePath, chunkSize);
+        leftBranch  = new SingleRetrogradeAnalysis(boardSize, leftP1Num,  leftP2Num,  table, rightPreviousResults, leftWorkingFilePath,  chunkSize, flushThreshold);
+        rightBranch = new SingleRetrogradeAnalysis(boardSize, rightP1Num, rightP2Num, table, leftPreviousResults,  rightWorkingFilePath, chunkSize, flushThreshold);
     }
 
     public CompletableFuture<Void> start() {
@@ -69,7 +65,6 @@ public class SingleRAParallelExecutor {
                 if (leftExists && rightExists) {
                     System.err.println(label + " Resuming both branches from existing .tmp files.");
                 } else {
-                    // Initialize whichever branches are missing
                     CompletableFuture<Void> initLeft  = leftExists  ? CompletableFuture.completedFuture(null)
                         : CompletableFuture.runAsync(() -> { try { leftBranch.initialize();  } catch (IOException e) { throw new UncheckedIOException(e); } });
                     CompletableFuture<Void> initRight = rightExists ? CompletableFuture.completedFuture(null)
@@ -80,8 +75,6 @@ public class SingleRAParallelExecutor {
                     System.err.println(label + " Init: " + (System.currentTimeMillis() - initStart) + "ms");
                 }
 
-                // Wire up cross-file readers for oppositeBoard lookups
-                // Opened fresh each iteration so they see the latest file state
                 long procStart = System.currentTimeMillis();
                 boolean keepGoing = true;
                 int iteration = 1;

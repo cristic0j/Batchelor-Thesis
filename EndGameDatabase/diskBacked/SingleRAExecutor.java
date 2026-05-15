@@ -13,7 +13,6 @@ public class SingleRAExecutor {
     private final BinomialTable table;
     private final int p1Num;
     private final int p2Num;
-    private final TableReader previousBoardResults;
     private final String workingFilePath;
     private final long chunkSize;
 
@@ -26,16 +25,16 @@ public class SingleRAExecutor {
         int p2Num,
         TableReader previousBoardResults,
         String workingFilePath,
-        long chunkSize
+        long chunkSize,
+        long flushThreshold
     ) {
         this.boardSize = boardSize;
         this.table = table;
         this.p1Num = p1Num;
         this.p2Num = p2Num;
-        this.previousBoardResults = previousBoardResults;
         this.workingFilePath = workingFilePath;
         this.chunkSize = chunkSize;
-        this.branch = new SingleRetrogradeAnalysis(boardSize, p1Num, p2Num, table, previousBoardResults, workingFilePath, chunkSize);
+        this.branch = new SingleRetrogradeAnalysis(boardSize, p1Num, p2Num, table, previousBoardResults, workingFilePath, chunkSize, flushThreshold);
     }
 
     public CompletableFuture<Void> start() {
@@ -66,11 +65,6 @@ public class SingleRAExecutor {
         });
     }
 
-    public String getWorkingFilePath() {
-        return workingFilePath;
-    }
-
-    public long getTotalPositions() {
-        return branch.getTotalPositions();
-    }
+    public String getWorkingFilePath() { return workingFilePath; }
+    public long getTotalPositions()    { return branch.getTotalPositions(); }
 }

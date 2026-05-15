@@ -12,7 +12,10 @@ import dataClasses.BoardState;
 import dataClasses.Move;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.LongStream;
 import logicModules.MoveProcessor;
@@ -24,6 +27,7 @@ public class SingleRetrogradeAnalysis {
     private final int boardSize;
     private final BinomialTable table;
     private final long chunkSize;
+    private final long flushThreshold;
     private final long totalPositions;
     private final String workingFilePath;
     private final TableReader previousBoardResults;
@@ -31,12 +35,12 @@ public class SingleRetrogradeAnalysis {
 
     private final AtomicHugeByteArray windowBuffer;
 
-    // Set before each window is processed, read by parallel workers
     private volatile long windowStart = -1;
     private volatile long currentWindowSize = 0;
-
-    // Open only during processUncertainStatesPass — reads own file outside current window
     private volatile FileReaderWriter.OpenReader selfReader = null;
+
+    // Deferred symmetric writes for positions outside the current window
+    private final ConcurrentHashMap<Long, Integer> deferredWrites = new ConcurrentHashMap<>();
 
     public SingleRetrogradeAnalysis(
         int boardSize,
@@ -45,7 +49,8 @@ public class SingleRetrogradeAnalysis {
         BinomialTable table,
         TableReader previousBoardResults,
         String workingFilePath,
-        long chunkSize
+        long chunkSize,
+        long flushThreshold
     ) {
         this.boardSize = boardSize;
         this.p1PiecesNum = p1PiecesNum;
@@ -54,6 +59,7 @@ public class SingleRetrogradeAnalysis {
         this.previousBoardResults = previousBoardResults;
         this.workingFilePath = workingFilePath;
         this.chunkSize = chunkSize;
+        this.flushThreshold = flushThreshold;
         this.totalPositions = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
         this.windowBuffer = new AtomicHugeByteArray(Math.min(chunkSize, totalPositions));
     }
@@ -64,11 +70,11 @@ public class SingleRetrogradeAnalysis {
 
         long pos = 0;
         while (pos < totalPositions) {
+            flushDeferredWrites();
             long wSize = Math.min(chunkSize, totalPositions - pos);
             windowStart = pos;
             currentWindowSize = wSize;
 
-            // Pre-fill buffer with DRAW before computing WIN positions
             final long ws = wSize;
             LongStream.range(0, ws).parallel().forEach(i -> windowBuffer.set(i, Outcome.DRAW.value));
 
@@ -81,6 +87,7 @@ public class SingleRetrogradeAnalysis {
             FileReaderWriter.writeWindow(workingFilePath, pos, wSize, windowBuffer);
             pos += chunkSize;
         }
+        flushDeferredWrites();
         System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Initialized.");
     }
 
@@ -123,6 +130,7 @@ public class SingleRetrogradeAnalysis {
 
             long pos = 0;
             while (pos < totalPositions) {
+                flushDeferredWrites();
                 long wSize = Math.min(chunkSize, totalPositions - pos);
                 FileReaderWriter.readWindow(workingFilePath, pos, wSize, windowBuffer);
                 windowStart = pos;
@@ -146,6 +154,7 @@ public class SingleRetrogradeAnalysis {
             }
         } finally {
             selfReader = null;
+            flushDeferredWrites();
         }
 
         return changed.get();
@@ -187,7 +196,6 @@ public class SingleRetrogradeAnalysis {
         return Outcome.DRAW.value;
     }
 
-    // Reads from windowBuffer if in range, otherwise from the file via selfReader
     private int getResultAt(long position) {
         if (position >= windowStart && position < windowStart + currentWindowSize) {
             return windowBuffer.get(position - windowStart);
@@ -221,8 +229,12 @@ public class SingleRetrogradeAnalysis {
     private void setInBuffer(long absPosition, int value) {
         if (absPosition >= windowStart && absPosition < windowStart + currentWindowSize) {
             windowBuffer.set(absPosition - windowStart, value);
+        } else {
+            deferredWrites.put(absPosition, value);
+            if (deferredWrites.size() >= flushThreshold) {
+                flushDeferredWrites();
+            }
         }
-        // Out-of-window positions are skipped — resolved when their window is processed
     }
 
     private void setWithSymmetryInBuffer(long index, int value) {
@@ -232,6 +244,27 @@ public class SingleRetrogradeAnalysis {
         for (long symIdx : symIndexes) {
             setInBuffer(symIdx, value);
         }
+    }
+
+    private synchronized void flushDeferredWrites() {
+        if (deferredWrites.isEmpty()) return;
+
+        // Drain entries atomically per key
+        List<Map.Entry<Long, Integer>> toFlush = new ArrayList<>(deferredWrites.size());
+        deferredWrites.forEach((k, v) -> {
+            if (deferredWrites.remove(k, v)) toFlush.add(Map.entry(k, v));
+        });
+
+        if (toFlush.isEmpty()) return;
+
+        toFlush.sort(Map.Entry.comparingByKey());
+
+        try {
+            FileReaderWriter.writeScattered(workingFilePath, toFlush);
+        } catch (IOException e) {
+            System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Deferred flush failed: " + e.getMessage());
+        }
+        System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Flushed " + toFlush.size() + " deferred symmetric writes.");
     }
 
     public void setOppositeBoard(TableReader oppositeBoard) {
