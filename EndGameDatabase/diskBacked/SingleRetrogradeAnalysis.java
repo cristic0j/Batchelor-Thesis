@@ -8,6 +8,7 @@ import EndGameDatabase.dataClasses.TableReader;
 import EndGameDatabase.logicModules.Indexing;
 import EndGameDatabase.logicModules.MoveListGenerator;
 import EndGameDatabase.logicModules.RandomAccessFile.FileReaderWriter;
+import EndGameDatabase.logicModules.SymmetryBuffer;
 import dataClasses.BoardState;
 import dataClasses.Move;
 import java.io.IOException;
@@ -30,6 +31,8 @@ public class SingleRetrogradeAnalysis {
     private TableReader oppositeBoard;
 
     private final AtomicHugeByteArray windowBuffer;
+    private final SymmetryBuffer symmetryBuffer;
+    private final boolean initSymmetry;
 
     private volatile long windowStart = -1;
     private volatile long currentWindowSize = 0;
@@ -42,7 +45,9 @@ public class SingleRetrogradeAnalysis {
         BinomialTable table,
         TableReader previousBoardResults,
         String workingFilePath,
-        long chunkSize
+        long chunkSize,
+        int symBufCapacity,
+        boolean initSymmetry
     ) {
         this.boardSize = boardSize;
         this.p1PiecesNum = p1PiecesNum;
@@ -51,8 +56,10 @@ public class SingleRetrogradeAnalysis {
         this.previousBoardResults = previousBoardResults;
         this.workingFilePath = workingFilePath;
         this.chunkSize = chunkSize;
+        this.initSymmetry = initSymmetry;
         this.totalPositions = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
         this.windowBuffer = new AtomicHugeByteArray(Math.min(chunkSize, totalPositions));
+        this.symmetryBuffer = new SymmetryBuffer(symBufCapacity);
     }
 
     public void initialize() throws IOException {
@@ -75,6 +82,7 @@ public class SingleRetrogradeAnalysis {
             }
 
             FileReaderWriter.writeWindow(workingFilePath, pos, wSize, windowBuffer);
+            if (initSymmetry) symmetryBuffer.flush(workingFilePath);
             pos += chunkSize;
         }
         System.err.println("[" + p1PiecesNum + "v" + p2PiecesNum + "] Initialized.");
@@ -82,21 +90,31 @@ public class SingleRetrogradeAnalysis {
 
     private void initSingleP2Window(long wStart, long wSize) {
         LongStream.range(0, wSize).parallel().forEach(i -> {
+            if (windowBuffer.get(i) != Outcome.DRAW.value) return;
             int[] map = getMapFromIndex(wStart + i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             if (!takeMoves.isEmpty()) {
-                windowBuffer.set(i, Outcome.WIN.value);
+                if (initSymmetry) {
+                    setWithSymmetry(wStart + i, Outcome.WIN.value);
+                } else {
+                    windowBuffer.set(i, Outcome.WIN.value);
+                }
             }
         });
     }
 
     private void initSingleP1Window(long wStart, long wSize) {
         LongStream.range(0, wSize).parallel().forEach(i -> {
+            if (windowBuffer.get(i) != Outcome.DRAW.value) return;
             int[] map = getMapFromIndex(wStart + i);
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             int result = evaluateP1SinglePieceState(takeMoves);
             if (result == Outcome.WIN.value) {
-                windowBuffer.set(i, result);
+                if (initSymmetry) {
+                    setWithSymmetry(wStart + i, result);
+                } else {
+                    windowBuffer.set(i, result);
+                }
             }
         });
     }
@@ -129,13 +147,14 @@ public class SingleRetrogradeAnalysis {
                     if (windowBuffer.get(i) == Outcome.DRAW.value) {
                         int newResult = evaluateStateOutcome(wStart + i);
                         if (newResult != Outcome.DRAW.value) {
-                            windowBuffer.set(i, newResult);
+                            setWithSymmetry(wStart + i, newResult);
                             changed.set(true);
                         }
                     }
                 });
 
                 FileReaderWriter.writeWindow(workingFilePath, pos, wSize, windowBuffer);
+                symmetryBuffer.flush(workingFilePath);
                 pos += chunkSize;
             }
         } finally {
@@ -143,6 +162,19 @@ public class SingleRetrogradeAnalysis {
         }
 
         return changed.get();
+    }
+
+    private void setWithSymmetry(long globalIndex, int value) {
+        int[] map = getMapFromIndex(globalIndex);
+        int n = (int) Math.sqrt(boardSize);
+        long[] symIndexes = Indexing.getAllTransformIndexes(map, n, false, table);
+        for (long symIdx : symIndexes) {
+            if (symIdx >= windowStart && symIdx < windowStart + currentWindowSize) {
+                windowBuffer.set(symIdx - windowStart, value);
+            } else {
+                symmetryBuffer.add(symIdx, (byte) value, workingFilePath);
+            }
+        }
     }
 
     private int evaluateStateOutcome(long index) {
@@ -215,19 +247,8 @@ public class SingleRetrogradeAnalysis {
         this.oppositeBoard = oppositeBoard;
     }
 
-    public String getWorkingFilePath() {
-        return workingFilePath;
-    }
-
-    public long getTotalPositions() {
-        return totalPositions;
-    }
-
-    public int getP1PiecesNum() {
-        return p1PiecesNum;
-    }
-
-    public int getP2PiecesNum() {
-        return p2PiecesNum;
-    }
+    public String getWorkingFilePath() { return workingFilePath; }
+    public long getTotalPositions()    { return totalPositions; }
+    public int getP1PiecesNum()        { return p1PiecesNum; }
+    public int getP2PiecesNum()        { return p2PiecesNum; }
 }

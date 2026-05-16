@@ -19,23 +19,26 @@ import java.util.*;
  * and the existing .tmp file will be resumed automatically.
  *
  * Usage:
- *   java -Xmx512M -cp bin EndGameDatabase.diskBacked.DatabaseBuilderDB <p1> <p2> [chunkSize]
+ *   java -Xmx512M -cp bin EndGameDatabase.diskBacked.DatabaseBuilderDB <p1> <p2> [chunkSize] [symBufCapacity]
  *   java -Xmx512M -cp bin EndGameDatabase.diskBacked.DatabaseBuilderDB   (interactive)
  *
- * Default chunkSize = 2^30 (about 1 billion positions = 1 GB RAM for the buffer).
+ * Default chunkSize = 2^31. Default symBufCapacity = 4,000,000 entries (~36 MB).
  */
 public class DatabaseBuilderDB {
 
     private static final int BOARD_SIZE = 36;
     private static final String DATA_PATH = "EndGameDatabase/data/";
     public static final long DEFAULT_CHUNK_SIZE = 1L << 31;
+    public static final int  DEFAULT_SYM_BUF_CAPACITY = 4_000_000;
 
     private final BinomialTable table;
     private final long chunkSize;
+    private final int symBufCapacity;
 
-    public DatabaseBuilderDB(long chunkSize) {
+    public DatabaseBuilderDB(long chunkSize, int symBufCapacity) {
         this.table = new BinomialTable(BOARD_SIZE);
         this.chunkSize = chunkSize;
+        this.symBufCapacity = symBufCapacity;
     }
 
     // ── Key helpers ──────────────────────────────────────────────────────────
@@ -71,7 +74,6 @@ public class DatabaseBuilderDB {
     private List<String> getDependencies(int a, int b) {
         List<String> deps = new ArrayList<>();
         if (a == 1 && b == 1) {
-            // ROOT — no dependencies
         } else if (a == b) {
             deps.add(nodeKey(a - 1, b));
         } else {
@@ -133,7 +135,7 @@ public class DatabaseBuilderDB {
         return FileReaderWriter.openReader(filePath(p1, p2), positionCount(p1, p2));
     }
 
-    private void writeFile(int p1, int p2, String tmpPath) throws IOException {
+    private void writeFile(int p1, int p2, String tmpPath) {
         new File(tmpPath).renameTo(new File(filePath(p1, p2)));
     }
 
@@ -141,7 +143,7 @@ public class DatabaseBuilderDB {
 
     private void buildNode(String key) throws IOException {
         int[] parts = parseKey(key);
-        int a = parts[0], b = parts[1]; // a <= b
+        int a = parts[0], b = parts[1];
 
         if (a == 1 && b == 1) {
             System.err.println("[Building] 1v1 — root analysis");
@@ -150,15 +152,17 @@ public class DatabaseBuilderDB {
             FileReaderWriter.writeToFile(filePath(1, 1), exec.getBoardResults(), positionCount(1, 1));
 
         } else if (a == b) {
-            System.err.println("[Building] " + a + "v" + b + " — symmetric single (disk-backed, chunkSize=" + chunkSize + ")");
+            System.err.println("[Building] " + a + "v" + b + " — symmetric single (disk-backed, chunkSize=" + chunkSize + ", symBuf=" + symBufCapacity + ")");
             try (FileReaderWriter.OpenReader prev = openReader(a - 1, b)) {
-                SingleRAExecutor exec = new SingleRAExecutor(BOARD_SIZE, table, a, b, prev, tempPath(a, b), chunkSize);
+                SingleRAExecutor exec = new SingleRAExecutor(
+                    BOARD_SIZE, table, a, b, prev, tempPath(a, b), chunkSize, symBufCapacity, true
+                );
                 exec.start().join();
                 writeFile(a, b, tempPath(a, b));
             }
 
         } else {
-            System.err.println("[Building] " + a + "v" + b + " + " + b + "v" + a + " — parallel pair (disk-backed, chunkSize=" + chunkSize + ")");
+            System.err.println("[Building] " + a + "v" + b + " + " + b + "v" + a + " — parallel pair (disk-backed, chunkSize=" + chunkSize + ", symBuf=" + symBufCapacity + ")");
             try (FileReaderWriter.OpenReader rightPrev = openReader(b - 1, a);
                  FileReaderWriter.OpenReader leftPrev  = (a == 1) ? openReader(1, 1) : openReader(a - 1, b)) {
 
@@ -169,7 +173,7 @@ public class DatabaseBuilderDB {
                     leftPrev, rightPrev,
                     tempPath(a, b),
                     tempPath(b, a),
-                    chunkSize
+                    chunkSize, symBufCapacity, true
                 );
                 exec.start().join();
                 writeFile(a, b, tempPath(a, b));
@@ -186,7 +190,7 @@ public class DatabaseBuilderDB {
             return;
         }
 
-        System.err.println("=== Database Builder (disk-backed)  target: " + p1 + "v" + p2 + "  chunkSize: " + chunkSize + " ===");
+        System.err.println("=== Database Builder (disk-backed)  target: " + p1 + "v" + p2 + "  chunkSize: " + chunkSize + "  symBuf: " + symBufCapacity + " ===");
 
         List<String> order = topologicalOrder(p1, p2);
 
@@ -223,19 +227,21 @@ public class DatabaseBuilderDB {
 
     public static void main(String[] args) {
         long chunkSize = DEFAULT_CHUNK_SIZE;
+        int symBufCapacity = DEFAULT_SYM_BUF_CAPACITY;
         int p1 = -1, p2 = -1;
 
         if (args.length >= 2) {
             try {
                 p1 = Integer.parseInt(args[0]);
                 p2 = Integer.parseInt(args[1]);
-                if (args.length >= 3) chunkSize = Long.parseLong(args[2]);
+                if (args.length >= 3) chunkSize      = Long.parseLong(args[2]);
+                if (args.length >= 4) symBufCapacity = Integer.parseInt(args[3]);
             } catch (NumberFormatException e) {
-                System.err.println("Usage: DatabaseBuilderDB <p1> <p2> [chunkSize]");
+                System.err.println("Usage: DatabaseBuilderDB <p1> <p2> [chunkSize] [symBufCapacity]");
                 return;
             }
             try {
-                new DatabaseBuilderDB(chunkSize).build(p1, p2);
+                new DatabaseBuilderDB(chunkSize, symBufCapacity).build(p1, p2);
             } catch (IOException e) {
                 System.err.println("IO error: " + e.getMessage());
                 e.printStackTrace();
@@ -243,23 +249,31 @@ public class DatabaseBuilderDB {
             return;
         }
 
-        // Interactive mode
         Scanner scanner = new Scanner(System.in);
         System.out.println("=== Surakarta Endgame Database Builder (disk-backed) ===");
         System.out.println("Only the current chunk lives in RAM — suitable for large tables.");
-        System.out.println("Enter: '<p1> <p2> [chunkSize]'  (e.g.  3 3  or  4 4 1073741824):");
+        System.out.println("Chunk size in positions [default " + DEFAULT_CHUNK_SIZE + "]:");
         System.out.print("> ");
 
         try {
-            String line = scanner.nextLine().trim();
-            String[] tokens = line.split("\\s+");
-            if (tokens.length < 2) { System.err.println("Error: expected at least two integers."); return; }
+            String chunkLine = scanner.nextLine().trim();
+            if (!chunkLine.isEmpty()) chunkSize = Long.parseLong(chunkLine);
+
+            System.out.println("Symmetry buffer capacity in entries [default " + DEFAULT_SYM_BUF_CAPACITY + "]:");
+            System.out.print("> ");
+            String symLine = scanner.nextLine().trim();
+            if (!symLine.isEmpty()) symBufCapacity = Integer.parseInt(symLine);
+
+            System.out.println("Enter target as '<p1> <p2>'  (e.g.  3 3  or  2 4):");
+            System.out.print("> ");
+            String targetLine = scanner.nextLine().trim();
+            String[] tokens = targetLine.split("\\s+");
+            if (tokens.length < 2) { System.err.println("Error: expected two integers."); return; }
             p1 = Integer.parseInt(tokens[0]);
             p2 = Integer.parseInt(tokens[1]);
-            if (tokens.length >= 3) chunkSize = Long.parseLong(tokens[2]);
 
             long start = System.currentTimeMillis();
-            new DatabaseBuilderDB(chunkSize).build(p1, p2);
+            new DatabaseBuilderDB(chunkSize, symBufCapacity).build(p1, p2);
             System.err.println("Total time: " + (System.currentTimeMillis() - start) / 1000 + "s");
         } catch (NumberFormatException e) {
             System.err.println("Error: enter integers >= 1.");

@@ -16,24 +16,27 @@ import java.util.*;
  * current table processed in disk-backed chunks via the diskBacked executors.
  *
  * Best of both worlds: fast RAM lookups for previous tables, low peak RAM for the current table.
+ * Symmetry propagation is enabled for processUncertainStatesPass only (init uses plain writes).
  *
  * Usage:
- *   java -Xmx4G   -cp bin EndGameDatabase.ramPrevDiskCurrent.DatabaseBuilderRPDC <p1> <p2>
- *   java -Xmx4G   -cp bin EndGameDatabase.ramPrevDiskCurrent.DatabaseBuilderRPDC <p1> <p2> [chunkSize]
- *   java -Xmx4G   -cp bin EndGameDatabase.ramPrevDiskCurrent.DatabaseBuilderRPDC   (interactive)
+ *   java -Xmx4G -cp bin EndGameDatabase.ramPrevDiskCurrent.DatabaseBuilderRPDC <p1> <p2> [chunkSize] [symBufCapacity]
+ *   java -Xmx4G -cp bin EndGameDatabase.ramPrevDiskCurrent.DatabaseBuilderRPDC   (interactive)
  */
 public class DatabaseBuilderRPDC {
 
     private static final int BOARD_SIZE = 36;
     private static final String DATA_PATH = "EndGameDatabase/data/";
     public static final long DEFAULT_CHUNK_SIZE = 1L << 31;
+    public static final int  DEFAULT_SYM_BUF_CAPACITY = 4_000_000;
 
     private final BinomialTable table;
     private final long chunkSize;
+    private final int symBufCapacity;
 
-    public DatabaseBuilderRPDC(long chunkSize) {
+    public DatabaseBuilderRPDC(long chunkSize, int symBufCapacity) {
         this.table = new BinomialTable(BOARD_SIZE);
         this.chunkSize = chunkSize;
+        this.symBufCapacity = symBufCapacity;
     }
 
     // ── Key helpers ──────────────────────────────────────────────────────────
@@ -143,14 +146,16 @@ public class DatabaseBuilderRPDC {
             FileReaderWriter.writeToFile(filePath(1, 1), exec.getBoardResults(), positionCount(1, 1));
 
         } else if (a == b) {
-            System.err.println("[Building] " + a + "v" + b + " — symmetric single (RAM prev, disk current, chunkSize=" + chunkSize + ")");
+            System.err.println("[Building] " + a + "v" + b + " — symmetric single (RAM prev, disk current, chunkSize=" + chunkSize + ", symBuf=" + symBufCapacity + ")");
             AtomicHugeByteArray prev = readFileIntoRam(a - 1, b);
-            SingleRAExecutor exec = new SingleRAExecutor(BOARD_SIZE, table, a, b, prev, tempPath(a, b), chunkSize);
+            SingleRAExecutor exec = new SingleRAExecutor(
+                BOARD_SIZE, table, a, b, prev, tempPath(a, b), chunkSize, symBufCapacity, false
+            );
             exec.start().join();
             new File(tempPath(a, b)).renameTo(new File(filePath(a, b)));
 
         } else {
-            System.err.println("[Building] " + a + "v" + b + " + " + b + "v" + a + " — parallel pair (RAM prev, disk current, chunkSize=" + chunkSize + ")");
+            System.err.println("[Building] " + a + "v" + b + " + " + b + "v" + a + " — parallel pair (RAM prev, disk current, chunkSize=" + chunkSize + ", symBuf=" + symBufCapacity + ")");
             AtomicHugeByteArray rightPrev = readFileIntoRam(b - 1, a);
             AtomicHugeByteArray leftPrev  = (a == 1) ? readFileIntoRam(1, 1) : readFileIntoRam(a - 1, b);
             SingleRAParallelExecutor exec = new SingleRAParallelExecutor(
@@ -160,7 +165,7 @@ public class DatabaseBuilderRPDC {
                 leftPrev, rightPrev,
                 tempPath(a, b),
                 tempPath(b, a),
-                chunkSize
+                chunkSize, symBufCapacity, false
             );
             exec.start().join();
             new File(tempPath(a, b)).renameTo(new File(filePath(a, b)));
@@ -176,7 +181,7 @@ public class DatabaseBuilderRPDC {
             return;
         }
 
-        System.err.println("=== Database Builder (RAM prev + disk current)  target: " + p1 + "v" + p2 + "  chunkSize: " + chunkSize + " ===");
+        System.err.println("=== Database Builder (RAM prev + disk current)  target: " + p1 + "v" + p2 + "  chunkSize: " + chunkSize + "  symBuf: " + symBufCapacity + " ===");
 
         List<String> order = topologicalOrder(p1, p2);
 
@@ -213,19 +218,21 @@ public class DatabaseBuilderRPDC {
 
     public static void main(String[] args) {
         long chunkSize = DEFAULT_CHUNK_SIZE;
+        int symBufCapacity = DEFAULT_SYM_BUF_CAPACITY;
         int p1 = -1, p2 = -1;
 
         if (args.length >= 2) {
             try {
                 p1 = Integer.parseInt(args[0]);
                 p2 = Integer.parseInt(args[1]);
-                if (args.length >= 3) chunkSize = Long.parseLong(args[2]);
+                if (args.length >= 3) chunkSize      = Long.parseLong(args[2]);
+                if (args.length >= 4) symBufCapacity = Integer.parseInt(args[3]);
             } catch (NumberFormatException e) {
-                System.err.println("Usage: DatabaseBuilderRPDC <p1> <p2> [chunkSize]");
+                System.err.println("Usage: DatabaseBuilderRPDC <p1> <p2> [chunkSize] [symBufCapacity]");
                 return;
             }
             try {
-                new DatabaseBuilderRPDC(chunkSize).build(p1, p2);
+                new DatabaseBuilderRPDC(chunkSize, symBufCapacity).build(p1, p2);
             } catch (IOException e) {
                 System.err.println("IO error: " + e.getMessage());
                 e.printStackTrace();
@@ -236,19 +243,28 @@ public class DatabaseBuilderRPDC {
         Scanner scanner = new Scanner(System.in);
         System.out.println("=== Surakarta Endgame Database Builder (RAM prev + disk current) ===");
         System.out.println("Previous tables loaded into RAM, current table processed in disk chunks.");
-        System.out.println("Enter: '<p1> <p2> [chunkSize]'  (e.g.  3 3  or  4 4 1073741824):");
+        System.out.println("Chunk size in positions [default " + DEFAULT_CHUNK_SIZE + "]:");
         System.out.print("> ");
 
         try {
-            String line = scanner.nextLine().trim();
-            String[] tokens = line.split("\\s+");
-            if (tokens.length < 2) { System.err.println("Error: expected at least two integers."); return; }
+            String chunkLine = scanner.nextLine().trim();
+            if (!chunkLine.isEmpty()) chunkSize = Long.parseLong(chunkLine);
+
+            System.out.println("Symmetry buffer capacity in entries [default " + DEFAULT_SYM_BUF_CAPACITY + "]:");
+            System.out.print("> ");
+            String symLine = scanner.nextLine().trim();
+            if (!symLine.isEmpty()) symBufCapacity = Integer.parseInt(symLine);
+
+            System.out.println("Enter target as '<p1> <p2>'  (e.g.  3 3  or  2 4):");
+            System.out.print("> ");
+            String targetLine = scanner.nextLine().trim();
+            String[] tokens = targetLine.split("\\s+");
+            if (tokens.length < 2) { System.err.println("Error: expected two integers."); return; }
             p1 = Integer.parseInt(tokens[0]);
             p2 = Integer.parseInt(tokens[1]);
-            if (tokens.length >= 3) chunkSize = Long.parseLong(tokens[2]);
 
             long start = System.currentTimeMillis();
-            new DatabaseBuilderRPDC(chunkSize).build(p1, p2);
+            new DatabaseBuilderRPDC(chunkSize, symBufCapacity).build(p1, p2);
             System.err.println("Total time: " + (System.currentTimeMillis() - start) / 1000 + "s");
         } catch (NumberFormatException e) {
             System.err.println("Error: enter integers >= 1.");

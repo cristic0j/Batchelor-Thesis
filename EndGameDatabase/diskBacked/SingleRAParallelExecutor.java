@@ -36,7 +36,9 @@ public class SingleRAParallelExecutor {
         TableReader rightPreviousResults,
         String leftWorkingFilePath,
         String rightWorkingFilePath,
-        long chunkSize
+        long chunkSize,
+        int symBufCapacity,
+        boolean initSymmetry
     ) {
         this.boardSize = boardSize;
         this.table = table;
@@ -48,8 +50,14 @@ public class SingleRAParallelExecutor {
         this.leftWorkingFilePath = leftWorkingFilePath;
         this.rightWorkingFilePath = rightWorkingFilePath;
 
-        leftBranch  = new SingleRetrogradeAnalysis(boardSize, leftP1Num,  leftP2Num,  table, rightPreviousResults, leftWorkingFilePath,  chunkSize);
-        rightBranch = new SingleRetrogradeAnalysis(boardSize, rightP1Num, rightP2Num, table, leftPreviousResults,  rightWorkingFilePath, chunkSize);
+        leftBranch  = new SingleRetrogradeAnalysis(
+            boardSize, leftP1Num,  leftP2Num,  table, rightPreviousResults,
+            leftWorkingFilePath,  chunkSize, symBufCapacity, initSymmetry
+        );
+        rightBranch = new SingleRetrogradeAnalysis(
+            boardSize, rightP1Num, rightP2Num, table, leftPreviousResults,
+            rightWorkingFilePath, chunkSize, symBufCapacity, initSymmetry
+        );
     }
 
     public CompletableFuture<Void> start() {

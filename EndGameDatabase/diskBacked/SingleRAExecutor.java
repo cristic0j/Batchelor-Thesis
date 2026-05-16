@@ -25,7 +25,9 @@ public class SingleRAExecutor {
         int p2Num,
         TableReader previousBoardResults,
         String workingFilePath,
-        long chunkSize
+        long chunkSize,
+        int symBufCapacity,
+        boolean initSymmetry
     ) {
         this.boardSize = boardSize;
         this.table = table;
@@ -33,7 +35,10 @@ public class SingleRAExecutor {
         this.p2Num = p2Num;
         this.workingFilePath = workingFilePath;
         this.chunkSize = chunkSize;
-        this.branch = new SingleRetrogradeAnalysis(boardSize, p1Num, p2Num, table, previousBoardResults, workingFilePath, chunkSize);
+        this.branch = new SingleRetrogradeAnalysis(
+            boardSize, p1Num, p2Num, table, previousBoardResults,
+            workingFilePath, chunkSize, symBufCapacity, initSymmetry
+        );
     }
 
     public CompletableFuture<Void> start() {
