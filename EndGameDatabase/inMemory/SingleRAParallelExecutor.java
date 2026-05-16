@@ -108,6 +108,10 @@ public class SingleRAParallelExecutor {
                 CompletableFuture<Void> initRight = CompletableFuture.runAsync(() -> rightBranch.initialize());
                 CompletableFuture.allOf(initLeft, initRight).join();
                 System.err.println(label + " Init: " + (System.currentTimeMillis() - initStart) + "ms");
+                if (leftCheckpointPath != null) {
+                    leftBranch.saveCheckpoint(leftCheckpointPath);
+                    rightBranch.saveCheckpoint(rightCheckpointPath);
+                }
             }
 
             // Phase 2: Synchronized solving loop

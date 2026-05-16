@@ -57,6 +57,9 @@ public class SingleRAExecutor {
                 long initStart = System.currentTimeMillis();
                 singleBranch.initialize();
                 System.err.println(label + " Init: " + (System.currentTimeMillis() - initStart) + "ms");
+                if (checkpointPath != null) {
+                    singleBranch.saveCheckpoint(checkpointPath);
+                }
             }
 
             long procStart = System.currentTimeMillis();
