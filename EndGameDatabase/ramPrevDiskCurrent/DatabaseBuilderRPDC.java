@@ -1,6 +1,6 @@
 package EndGameDatabase.ramPrevDiskCurrent;
 
-import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import EndGameDatabase.dataClasses.AtomicPackedBitArray;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.diskBacked.SingleRAExecutor;
 import EndGameDatabase.diskBacked.SingleRAParallelExecutor;
@@ -129,8 +129,8 @@ public class DatabaseBuilderRPDC {
         return Indexing.computeTheNumberOfPossiblePositions(p1, p2, BOARD_SIZE, table);
     }
 
-    private AtomicHugeByteArray readFileIntoRam(int p1, int p2) throws IOException {
-        return FileReaderWriter.readFromFile(filePath(p1, p2), positionCount(p1, p2));
+    private AtomicPackedBitArray readFileIntoRam(int p1, int p2) throws IOException {
+        return FileReaderWriter.readFromFilePacked(filePath(p1, p2), positionCount(p1, p2));
     }
 
     // ── Build logic ──────────────────────────────────────────────────────────
@@ -147,7 +147,7 @@ public class DatabaseBuilderRPDC {
 
         } else if (a == b) {
             System.err.println("[Building] " + a + "v" + b + " — symmetric single (RAM prev, disk current, chunkSize=" + chunkSize + ", symBuf=" + symBufCapacity + ")");
-            AtomicHugeByteArray prev = readFileIntoRam(a - 1, b);
+            AtomicPackedBitArray prev = readFileIntoRam(a - 1, b);
             SingleRAExecutor exec = new SingleRAExecutor(
                 BOARD_SIZE, table, a, b, prev, tempPath(a, b), chunkSize, symBufCapacity, false
             );
@@ -156,8 +156,8 @@ public class DatabaseBuilderRPDC {
 
         } else {
             System.err.println("[Building] " + a + "v" + b + " + " + b + "v" + a + " — parallel pair (RAM prev, disk current, chunkSize=" + chunkSize + ", symBuf=" + symBufCapacity + ")");
-            AtomicHugeByteArray rightPrev = readFileIntoRam(b - 1, a);
-            AtomicHugeByteArray leftPrev  = (a == 1) ? readFileIntoRam(1, 1) : readFileIntoRam(a - 1, b);
+            AtomicPackedBitArray rightPrev = readFileIntoRam(b - 1, a);
+            AtomicPackedBitArray leftPrev  = (a == 1) ? readFileIntoRam(1, 1) : readFileIntoRam(a - 1, b);
             SingleRAParallelExecutor exec = new SingleRAParallelExecutor(
                 BOARD_SIZE, table,
                 a, b,

@@ -11,6 +11,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import EndGameDatabase.dataClasses.AtomicPackedBitArray;
 import EndGameDatabase.dataClasses.TableReader;
 
 public class FileReaderWriter {
@@ -86,6 +87,84 @@ public class FileReaderWriter {
         }
 
         return result;
+    }
+
+    // ── AtomicPackedBitArray overloads (direct byte I/O — no bit unpacking needed) ──
+
+    public static void writeToFile(String path, AtomicPackedBitArray data, long size) throws IOException {
+        File file = new File(path);
+        File parentDir = file.getParentFile();
+        if (parentDir != null && !parentDir.exists()) parentDir.mkdirs();
+
+        long totalBytes = (size + 3) >>> 2;
+        try (RandomAccessFile raf = new RandomAccessFile(path, "rw")) {
+            raf.setLength(0);
+            long written = 0;
+            for (int c = 0; c < data.numChunks() && written < totalBytes; c++) {
+                byte[] chunk = data.getChunk(c);
+                int toWrite = (int) Math.min(chunk.length, totalBytes - written);
+                raf.write(chunk, 0, toWrite);
+                written += toWrite;
+            }
+        }
+    }
+
+    public static AtomicPackedBitArray readFromFilePacked(String path, long totalValues) throws IOException {
+        AtomicPackedBitArray result = new AtomicPackedBitArray(totalValues);
+        long totalBytes = (totalValues + 3) >>> 2;
+        try (RandomAccessFile raf = new RandomAccessFile(path, "r")) {
+            long read = 0;
+            for (int c = 0; c < result.numChunks() && read < totalBytes; c++) {
+                byte[] chunk = result.getChunk(c);
+                int toRead = (int) Math.min(chunk.length, totalBytes - read);
+                raf.readFully(chunk, 0, toRead);
+                read += toRead;
+            }
+        }
+        return result;
+    }
+
+    public static void readIntoArray(String path, AtomicPackedBitArray dest) throws IOException {
+        long totalBytes = (dest.size() + 3) >>> 2;
+        try (RandomAccessFile raf = new RandomAccessFile(path, "r")) {
+            long read = 0;
+            for (int c = 0; c < dest.numChunks() && read < totalBytes; c++) {
+                byte[] chunk = dest.getChunk(c);
+                int toRead = (int) Math.min(chunk.length, totalBytes - read);
+                raf.readFully(chunk, 0, toRead);
+                read += toRead;
+            }
+        }
+    }
+
+    public static void readWindow(String path, long startPos, long count, AtomicPackedBitArray dest) throws IOException {
+        long startByte = startPos >>> 2;
+        long byteCount = (count + 3) >>> 2;
+        try (RandomAccessFile raf = new RandomAccessFile(path, "r")) {
+            raf.seek(startByte);
+            long read = 0;
+            for (int c = 0; c < dest.numChunks() && read < byteCount; c++) {
+                byte[] chunk = dest.getChunk(c);
+                int toRead = (int) Math.min(chunk.length, byteCount - read);
+                raf.readFully(chunk, 0, toRead);
+                read += toRead;
+            }
+        }
+    }
+
+    public static void writeWindow(String path, long startPos, long count, AtomicPackedBitArray src) throws IOException {
+        long startByte = startPos >>> 2;
+        long byteCount = (count + 3) >>> 2;
+        try (RandomAccessFile raf = new RandomAccessFile(path, "rw")) {
+            raf.seek(startByte);
+            long written = 0;
+            for (int c = 0; c < src.numChunks() && written < byteCount; c++) {
+                byte[] chunk = src.getChunk(c);
+                int toWrite = (int) Math.min(chunk.length, byteCount - written);
+                raf.write(chunk, 0, toWrite);
+                written += toWrite;
+            }
+        }
     }
 
     /**

@@ -1,7 +1,7 @@
 package EndGameDatabase.inMemory;
 
 import EndGameDatabase.dataClasses.BinomialTable;
-import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import EndGameDatabase.dataClasses.AtomicPackedBitArray;
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
@@ -13,10 +13,10 @@ public class SingleRAExecutor {
     private int p1Num;
     private int p2Num;
 
-    private AtomicHugeByteArray previousBoardResults;
+    private AtomicPackedBitArray previousBoardResults;
     private String checkpointPath;
 
-    private AtomicHugeByteArray singleRAResults;
+    private AtomicPackedBitArray singleRAResults;
 
     private SingleRetrogradeAnalysis singleBranch;
 
@@ -25,7 +25,7 @@ public class SingleRAExecutor {
         BinomialTable table,
         int p1Num,
         int p2Num,
-        AtomicHugeByteArray previousBoardResults,
+        AtomicPackedBitArray previousBoardResults,
         String checkpointPath
     ){
         this.boardSize = boardSize;
@@ -78,7 +78,7 @@ public class SingleRAExecutor {
         });
     }
 
-    public AtomicHugeByteArray getBranchResults() {
+    public AtomicPackedBitArray getBranchResults() {
         return singleRAResults;
     }
 }

@@ -14,14 +14,14 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import EndGameDatabase.dataClasses.AtomicPackedBitArray;
 import java.util.stream.LongStream;
 import logicModules.MoveProcessor;
 
 public class SingleRetrogradeAnalysis {
-    private AtomicHugeByteArray boardResults;
-    private AtomicHugeByteArray previousBoardResults;  // in-RAM: loaded from completed table
-    private AtomicHugeByteArray oppositeBoard;          // in-RAM: built live by parallel partner
+    private AtomicPackedBitArray boardResults;
+    private AtomicPackedBitArray previousBoardResults;  // in-RAM: loaded from completed table
+    private AtomicPackedBitArray oppositeBoard;          // in-RAM: built live by parallel partner
 
     private final int p1PiecesNum;
     private final int p2PiecesNum;
@@ -33,7 +33,7 @@ public class SingleRetrogradeAnalysis {
         int p1PiecesNum,
         int p2PiecesNum,
         BinomialTable table,
-        AtomicHugeByteArray previousBoardResults
+        AtomicPackedBitArray previousBoardResults
     ){
         this.boardSize = boardSize;
         this.p1PiecesNum = p1PiecesNum;
@@ -41,7 +41,7 @@ public class SingleRetrogradeAnalysis {
         this.table = table;
         this.previousBoardResults = previousBoardResults;
         long numberOfResults = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
-        this.boardResults = new AtomicHugeByteArray(numberOfResults);
+        this.boardResults = new AtomicPackedBitArray(numberOfResults);
     }
 
     public void initialize() {
@@ -51,7 +51,7 @@ public class SingleRetrogradeAnalysis {
     }
 
     private void initializeBoardStates() {
-        LongStream.range(0, boardResults.size()).parallel().forEach(i -> boardResults.set(i, Outcome.DRAW.value));
+        boardResults.fill(Outcome.DRAW.value);
         if (p2PiecesNum == 1) {
             initializeForSingleP2Piece();
         } else {
@@ -206,11 +206,11 @@ public class SingleRetrogradeAnalysis {
         return p2PiecesNum;
     }
 
-    public AtomicHugeByteArray getBoardResults() {
+    public AtomicPackedBitArray getBoardResults() {
         return this.boardResults;
     }
 
-    public void setOppositeBoard(AtomicHugeByteArray oppositeBoard) {
+    public void setOppositeBoard(AtomicPackedBitArray oppositeBoard) {
         this.oppositeBoard = oppositeBoard;
     }
 

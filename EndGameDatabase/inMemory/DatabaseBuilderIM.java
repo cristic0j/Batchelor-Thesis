@@ -2,6 +2,7 @@ package EndGameDatabase.inMemory;
 
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import EndGameDatabase.dataClasses.AtomicPackedBitArray;
 import EndGameDatabase.logicModules.Indexing;
 import EndGameDatabase.logicModules.RandomAccessFile.FileReaderWriter;
 import EndGameDatabase.logicModules.RetrogradeAnalysisExecutor.RootRAExecutor;
@@ -123,11 +124,11 @@ public class DatabaseBuilderIM {
         return Indexing.computeTheNumberOfPossiblePositions(p1, p2, BOARD_SIZE, table);
     }
 
-    private AtomicHugeByteArray readFile(int p1, int p2) throws IOException {
-        return FileReaderWriter.readFromFile(filePath(p1, p2), positionCount(p1, p2));
+    private AtomicPackedBitArray readFile(int p1, int p2) throws IOException {
+        return FileReaderWriter.readFromFilePacked(filePath(p1, p2), positionCount(p1, p2));
     }
 
-    private void writeFile(int p1, int p2, AtomicHugeByteArray data) throws IOException {
+    private void writeFile(int p1, int p2, AtomicPackedBitArray data) throws IOException {
         FileReaderWriter.writeToFile(filePath(p1, p2), data, positionCount(p1, p2));
     }
 
@@ -141,11 +142,11 @@ public class DatabaseBuilderIM {
             System.err.println("[Building] 1v1 — root analysis");
             RootRAExecutor exec = new RootRAExecutor(BOARD_SIZE, table);
             exec.start();
-            writeFile(1, 1, exec.getBoardResults());
+            FileReaderWriter.writeToFile(filePath(1, 1), exec.getBoardResults(), positionCount(1, 1));
 
         } else if (a == b) {
             System.err.println("[Building] " + a + "v" + b + " — symmetric single (in-memory prev)");
-            AtomicHugeByteArray prev = readFile(a - 1, b);
+            AtomicPackedBitArray prev = readFile(a - 1, b);
             SingleRAExecutor exec = new SingleRAExecutor(BOARD_SIZE, table, a, b, prev, tempPath(a, b));
             exec.start().join();
             new File(tempPath(a, b)).renameTo(new File(filePath(a, b)));
@@ -153,8 +154,8 @@ public class DatabaseBuilderIM {
         } else {
             // a < b: parallel pair produces both avb and bva
             System.err.println("[Building] " + a + "v" + b + " + " + b + "v" + a + " — parallel pair (in-memory prev)");
-            AtomicHugeByteArray rightPrev = readFile(b - 1, a);
-            AtomicHugeByteArray leftPrev  = (a == 1) ? readFile(1, 1) : readFile(a - 1, b);
+            AtomicPackedBitArray rightPrev = readFile(b - 1, a);
+            AtomicPackedBitArray leftPrev  = (a == 1) ? readFile(1, 1) : readFile(a - 1, b);
             SingleRAParallelExecutor exec = new SingleRAParallelExecutor(
                 BOARD_SIZE, table,
                 a, b,

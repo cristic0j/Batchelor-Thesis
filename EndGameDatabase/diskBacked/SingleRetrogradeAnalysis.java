@@ -1,6 +1,6 @@
 package EndGameDatabase.diskBacked;
 
-import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import EndGameDatabase.dataClasses.AtomicPackedBitArray;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.IndexingInput;
 import EndGameDatabase.dataClasses.Outcome;
@@ -30,7 +30,7 @@ public class SingleRetrogradeAnalysis {
     private final TableReader previousBoardResults;
     private TableReader oppositeBoard;
 
-    private final AtomicHugeByteArray windowBuffer;
+    private final AtomicPackedBitArray windowBuffer;
     private final SymmetryBuffer symmetryBuffer;
     private final boolean initSymmetry;
 
@@ -58,7 +58,7 @@ public class SingleRetrogradeAnalysis {
         this.chunkSize = chunkSize;
         this.initSymmetry = initSymmetry;
         this.totalPositions = Indexing.computeTheNumberOfPossiblePositions(p1PiecesNum, p2PiecesNum, boardSize, table);
-        this.windowBuffer = new AtomicHugeByteArray(Math.min(chunkSize, totalPositions));
+        this.windowBuffer = new AtomicPackedBitArray(Math.min(chunkSize, totalPositions));
         this.symmetryBuffer = new SymmetryBuffer(symBufCapacity);
     }
 
@@ -72,8 +72,7 @@ public class SingleRetrogradeAnalysis {
             windowStart = pos;
             currentWindowSize = wSize;
 
-            final long ws = wSize;
-            LongStream.range(0, ws).parallel().forEach(i -> windowBuffer.set(i, Outcome.DRAW.value));
+            windowBuffer.fill(Outcome.DRAW.value);
 
             if (p2PiecesNum == 1) {
                 initSingleP2Window(pos, wSize);

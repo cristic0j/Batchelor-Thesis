@@ -1,7 +1,7 @@
 package EndGameDatabase.inMemory;
 
 import EndGameDatabase.dataClasses.BinomialTable;
-import EndGameDatabase.dataClasses.AtomicHugeByteArray;
+import EndGameDatabase.dataClasses.AtomicPackedBitArray;
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
@@ -10,8 +10,8 @@ public class SingleRAParallelExecutor {
     private int boardSize;
     private BinomialTable table;
 
-    private AtomicHugeByteArray leftPreviousResults;   // in-RAM: loaded from completed table
-    private AtomicHugeByteArray rightPreviousResults;  // in-RAM: loaded from completed table
+    private AtomicPackedBitArray leftPreviousResults;   // in-RAM: loaded from completed table
+    private AtomicPackedBitArray rightPreviousResults;  // in-RAM: loaded from completed table
 
     private int leftP1Num;
     private int leftP2Num;
@@ -22,8 +22,8 @@ public class SingleRAParallelExecutor {
     private String leftCheckpointPath;
     private String rightCheckpointPath;
 
-    private AtomicHugeByteArray leftSingleRAResults;   // in-RAM: being built
-    private AtomicHugeByteArray rightSingleRAResults;  // in-RAM: being built
+    private AtomicPackedBitArray leftSingleRAResults;   // in-RAM: being built
+    private AtomicPackedBitArray rightSingleRAResults;  // in-RAM: being built
 
     private SingleRetrogradeAnalysis leftBranch;
     private SingleRetrogradeAnalysis rightBranch;
@@ -35,8 +35,8 @@ public class SingleRAParallelExecutor {
         int leftP2Num,
         int rightP1Num,
         int rightP2Num,
-        AtomicHugeByteArray leftPreviousResults,
-        AtomicHugeByteArray rightPreviousResults,
+        AtomicPackedBitArray leftPreviousResults,
+        AtomicPackedBitArray rightPreviousResults,
         String leftCheckpointPath,
         String rightCheckpointPath
     ){
@@ -141,11 +141,11 @@ public class SingleRAParallelExecutor {
         });
     }
 
-    public AtomicHugeByteArray getLeftBranchResults() {
+    public AtomicPackedBitArray getLeftBranchResults() {
         return leftSingleRAResults;
     }
 
-    public AtomicHugeByteArray getRightBranchResults() {
+    public AtomicPackedBitArray getRightBranchResults() {
         return rightSingleRAResults;
     }
 }
