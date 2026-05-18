@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Surakarta game engine + endgame tablebase generator for a Bachelor's Thesis. Surakarta is a 2-player board game on a 6x6 grid (36 squares) where pieces can capture via circular rails. The project has two independent modules:
+Surakarta game engine + endgame tablebase generator for a Bachelor's Thesis. Surakarta is a 2-player board game on a 6x6 grid (36 squares) where pieces can capture via circular rails. The project has three modules:
 
 - **SurakartaGameEngine** — Interactive 2-player game
 - **EndGameDatabase** — Retrograde analysis to build optimal-play endgame databases
+- **MoveAdvisor** — Given a board state, queries the database and recommends the best move
 
 ## Build & Run
 
@@ -34,6 +35,14 @@ java -Xmx4G -cp bin EndGameDatabase.DatabaseBuilder
 ```
 
 The builder prints a dependency plan, skips any tables whose files already exist in `EndGameDatabase/data/`, then builds remaining tables in topological order.
+
+**Compile and run the move advisor:**
+```bash
+javac -d bin SurakartaGameEngine/dataClasses/*.java SurakartaGameEngine/logicModules/*.java EndGameDatabase/dataClasses/*.java EndGameDatabase/logicModules/Indexing.java EndGameDatabase/logicModules/MoveListGenerator.java EndGameDatabase/logicModules/RandomAccessFile/FileReaderWriter.java MoveAdvisor/MoveAdvisor.java MoveAdvisor/main.java
+java -cp bin MoveAdvisor.main
+```
+
+Edit `MoveAdvisor/main.java` to set the board and active player for your position.
 
 **Run the symmetry test:**
 ```bash
@@ -76,6 +85,18 @@ The 6x6 board is a flat `int[36]` array. Squares are indexed 0–35 (row-major).
 
 **Current state (`EndGameDatabase/main.java`):** Reads `moves1v2.txt` (21,420 positions), computes the 2v2 analysis, writes `moves2v2.txt`. Commented-out blocks show the intended sequence: 1v1 → 1v2 → 2v1 → 1v3 → 3v1 → 2v2 → ...
 
+### Move Advisor (`MoveAdvisor/`)
+
+`MoveAdvisor.advise(int[] board, int activePlayer)` queries the pre-built database to suggest the best move for the active player:
+
+1. Counts pieces, looks up the current position in `EndGameDatabase/data/moves<my>v<opp>.txt`.
+2. Reports the current outcome (WIN / DRAW / LOSS) for the active player.
+3. For **WIN**: finds and prints a move that puts the opponent in a LOSS position.
+4. For **DRAW**: finds and prints a move that keeps the opponent in a DRAW (or LOSS) position.
+5. For **LOSS**: reports that no winning or drawing move exists.
+
+The indexing perspective flips when looking up the opponent's resulting position (`flipThePieces = (opponent == 2)`), so the file and index always match the active-player-as-P1 convention used during database construction.
+
 ### Key dependency between modules
 
-`EndGameDatabase` imports from `SurakartaGameEngine` — specifically `BoardState`, `Move`, and `MoveValidator` — so the game engine classes must always be on the classpath when compiling the database module.
+`EndGameDatabase` and `MoveAdvisor` both import from `SurakartaGameEngine` — specifically `BoardState`, `Move`, and `MoveValidator` — so the game engine classes must always be on the classpath when compiling those modules.
