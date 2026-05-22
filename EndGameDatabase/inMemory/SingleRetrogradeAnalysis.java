@@ -149,13 +149,15 @@ public class SingleRetrogradeAnalysis {
         if (foundLossForP2) {
             return Outcome.WIN.value;
         } else if (hasMoves && allAreWinsP2) {
-            if (p1PiecesNum != p2PiecesNum) {
-                List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
-                for (Move move : takeMoves) {
-                    int nextStateResult = getResultOfMoveFromPrevious(move);
-                    if (nextStateResult != Outcome.WIN.value) {
-                        return Outcome.DRAW.value;
-                    }
+            // Check capture moves regardless of symmetric/asymmetric — in the NvN case,
+            // previousBoardResults holds the (N-1)vN table which is the correct sub-table
+            // for post-capture positions.  Skipping this for p1==p2 caused positions with
+            // a drawing capture to be incorrectly classified as LOSS.
+            List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
+            for (Move move : takeMoves) {
+                int nextStateResult = getResultOfMoveFromPrevious(move);
+                if (nextStateResult != Outcome.WIN.value) {
+                    return Outcome.DRAW.value;
                 }
             }
             return Outcome.LOSS.value;

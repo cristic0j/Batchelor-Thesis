@@ -1,5 +1,3 @@
-package Testing;
-
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.IndexingInput;
 import EndGameDatabase.logicModules.Indexing;

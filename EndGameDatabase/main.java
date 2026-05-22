@@ -14,12 +14,12 @@ public class main {
 
 
         try {
-            int index = 11504881;
+            int index = 135933;
 
-            IndexingInput mapAtIndex = Indexing.filePositionToIndexingInput(index, boardSize, 2, 4, table);
+            IndexingInput mapAtIndex = Indexing.filePositionToIndexingInput(index, boardSize, 2, 2, table);
             mapAtIndex.displayIndexInputAsAMap(boardSize);
 
-            System.err.println("Value is: "+FileReaderWriter.readValueFromFile("EndGameDatabase/data/moves2v4.txt", index));
+            System.err.println("Value is: "+FileReaderWriter.readValueFromFile("EndGameDatabase/data/moves2v2.txt", index));
 
             
         } catch (IOException e) {

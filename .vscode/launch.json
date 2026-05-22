@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "main",
+            "request": "launch",
+            "mainClass": "EndGameDatabase.main",
+            "projectName": "Batchelor-Thesis_21d0465e"
+        },
+        {
+            "type": "java",
+            "name": "DatabaseBuilder",
+            "request": "launch",
+            "mainClass": "EndGameDatabase.DatabaseBuilder",
+            "projectName": "Batchelor-Thesis_21d0465e"
+        },
+        {
+            "type": "java",
+            "name": "Run Tester",
+            "request": "launch",
+            "mainClass": "Tester",
+            "classPaths": [
+                "${workspaceFolder}/Testing/bin",
+                "${workspaceFolder}/AIAgent/data"
+            ],
+            "preLaunchTask": "Compile Tester",
+            "cwd": "${workspaceFolder}",
+            "vmArgs": "-Xmx2G",
+            "console": "integratedTerminal"
+        }
+    ]
+}
