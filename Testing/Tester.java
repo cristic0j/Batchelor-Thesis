@@ -89,7 +89,6 @@ public class Tester {
         int grandTotal = 0, grandMatch = 0;
 
         // Collect failures for end-of-run display
-        record Failure(long idx, String dbLabel, String aiLabel, int[] board) {}
         List<Failure> failures = new ArrayList<>();
 
         new File(OUT_DIR).mkdirs();
@@ -220,6 +219,17 @@ public class Tester {
         } finally {
             System.setOut(REAL_OUT);
         }
+    }
+
+    static class Failure {
+        final long idx; final String dbLabel; final String aiLabel; final int[] board;
+        Failure(long idx, String dbLabel, String aiLabel, int[] board) {
+            this.idx = idx; this.dbLabel = dbLabel; this.aiLabel = aiLabel; this.board = board;
+        }
+        long idx()      { return idx; }
+        String dbLabel(){ return dbLabel; }
+        String aiLabel(){ return aiLabel; }
+        int[] board()   { return board; }
     }
 
     static String label(int v) {
