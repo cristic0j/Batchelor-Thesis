@@ -5,6 +5,20 @@
             "type": "java",
             "name": "main",
             "request": "launch",
+            "mainClass": "MoveAdvisor.main",
+            "projectName": "Batchelor-Thesis_21d0465e"
+        },
+        {
+            "type": "java",
+            "name": "FindOutcome",
+            "request": "launch",
+            "mainClass": "FindOutcome",
+            "projectName": "Batchelor-Thesis_21d0465e"
+        },
+        {
+            "type": "java",
+            "name": "main",
+            "request": "launch",
             "mainClass": "EndGameDatabase.main",
             "projectName": "Batchelor-Thesis_21d0465e"
         },
