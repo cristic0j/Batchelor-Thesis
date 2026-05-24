@@ -1190,8 +1190,37 @@ public class NegaMaxPlayer extends AbstractPlayer {
         }
  
         // Count bord as one move node expansion.
-        searchCounter++;    
-   
+        searchCounter++;
+
+        // ── Custom tablebase oracle ────────────────────────────────────────────
+        // If an external endgame database has been registered and the position
+        // has few enough pieces, query it now instead of running the heuristic.
+        // This gives a 100%-certain answer and prunes the subtree completely.
+        if (customTablebase != null) {
+            int _total = bord.B_Counter + bord.W_Counter;
+            if (_total > 0 && _total <= customTablebaseMaxPieces) {
+                int _result = customTablebase.lookup(bord);
+                if (_result >= 0) {
+                    egdbCounter++;
+                    // Convention (mirrors the built-in EGDB):
+                    //   _result == 1  →  Black (global P1) wins
+                    //   _result == 0  →  White (global P2) wins
+                    //   _result == 2  →  UNCERTAIN / DRAW
+                    if (_result == 1) {          // Black (global P1) wins
+                        best_move.score = side * (TERMINAL_SCORE - pathlength
+                                          - gameAI.heuristicDTC(bord, side));
+                    } else if (_result == 0) {   // White (global P2) wins
+                        best_move.score = -side * (TERMINAL_SCORE - pathlength
+                                          - gameAI.heuristicDTC(bord, -side));
+                    } else {                     // UNCERTAIN / DRAW
+                        best_move.score = (side == beginSide) ? drawValue : -drawValue;
+                    }
+                    return best_move;
+                }
+            }
+        }
+        // ── End custom tablebase oracle ────────────────────────────────────────
+
         if (depth <= 0) {
         	countNodes++;    
         	

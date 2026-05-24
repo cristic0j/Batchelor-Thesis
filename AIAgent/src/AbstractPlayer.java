@@ -43,7 +43,15 @@ public abstract class AbstractPlayer {
     protected volatile boolean neverEnd = false;
     protected long  decreaseValue =0;
     protected int egdbCounter =0;
-    
+
+    /**
+     * Optional perfect-play endgame oracle (set from outside before calling search).
+     * When non-null, every node whose total piece count is ≤ customTablebaseMaxPieces
+     * is queried first; if the oracle returns a result the subtree is pruned.
+     */
+    public static volatile TablebaseOracle customTablebase       = null;
+    public static volatile int             customTablebaseMaxPieces = 0;
+
     public long duration;
     public boolean timeCheck = false;
     
