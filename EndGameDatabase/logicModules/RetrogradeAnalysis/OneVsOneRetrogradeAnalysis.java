@@ -92,7 +92,7 @@ public class OneVsOneRetrogradeAnalysis {
 
         if (foundLossForP2) {
             return Outcome.WIN.value;
-        } else if (hasMoves && allAreWinsP2) {
+        } else if (!hasMoves || allAreWinsP2) {
             return Outcome.LOSS.value;
         }
 

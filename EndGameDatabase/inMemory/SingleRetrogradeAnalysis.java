@@ -157,7 +157,7 @@ public class SingleRetrogradeAnalysis {
             List<Move> takeMoves = MoveListGenerator.getTakeMoveList(map, 1);
             boolean hasAnyMove = hasMoves || !takeMoves.isEmpty();
             if (!hasAnyMove) {
-                return Outcome.DRAW.value; // no moves at all — treat as draw (stalemate)
+                return Outcome.LOSS.value; // no moves at all — stalemate is a loss
             }
             for (Move move : takeMoves) {
                 int nextStateResult = getResultOfMoveFromPrevious(move);

@@ -26,7 +26,7 @@ public class Tester {
 
     static final int    BOARD_SIZE   = 36;
     static final long   SEED         = 42L;
-    static final int    AI_THINK_MS  = 1000;
+    static final int    AI_THINK_MS  = 5000;
     static final String DB_PATH      = "EndGameDatabase/data/";
     static final String OUT_DIR      = "Testing/";
 
