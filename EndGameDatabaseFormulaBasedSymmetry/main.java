@@ -1,8 +1,8 @@
-package EndGameDatabaseSymmetry;
+package EndGameDatabaseFormulaBasedSymmetry;
 
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.logicModules.RandomAccessFile.FileReaderWriter;
-import EndGameDatabaseSymmetry.logicModules.SymmetricIndexing;
+import EndGameDatabaseFormulaBasedSymmetry.logicModules.SymmetricIndexing;
 import java.io.IOException;
 
 public class main {
@@ -30,7 +30,7 @@ public class main {
 
         try {
             int outcome = FileReaderWriter.readValueFromFile(
-                "EndGameDatabaseSymmetry/data/moves3v3.txt",
+                "EndGameDatabaseFormulaBasedSymmetry/data/moves3v3.txt",
                 canonicalIndex
             );
 

@@ -3,6 +3,27 @@
     "configurations": [
         {
             "type": "java",
+            "name": "main",
+            "request": "launch",
+            "mainClass": "EndGameDatabaseRankSelect.main",
+            "projectName": "Batchelor-Thesis_21d0465e"
+        },
+        {
+            "type": "java",
+            "name": "main",
+            "request": "launch",
+            "mainClass": "EndGameDatabaseSymmetry.main",
+            "projectName": "Batchelor-Thesis_21d0465e"
+        },
+        {
+            "type": "java",
+            "name": "DatabaseBuilderSymmetry",
+            "request": "launch",
+            "mainClass": "EndGameDatabaseSymmetry.DatabaseBuilderSymmetry",
+            "projectName": "Batchelor-Thesis_21d0465e"
+        },
+        {
+            "type": "java",
             "name": "TableSampler",
             "request": "launch",
             "mainClass": "Statistics.TableSampler",

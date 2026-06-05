@@ -1,12 +1,12 @@
-package EndGameDatabaseSymmetry;
+package EndGameDatabaseFormulaBasedSymmetry;
 
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.logicModules.RandomAccessFile.FileReaderWriter;
-import EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysisExecutor.SymRootRAExecutor;
-import EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysisExecutor.SymSingleRAExecutor;
-import EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysisExecutor.SymSingleRAParallelExecutor;
-import EndGameDatabaseSymmetry.logicModules.SymmetricIndexing;
+import EndGameDatabaseFormulaBasedSymmetry.logicModules.RetrogradeAnalysisExecutor.SymRootRAExecutor;
+import EndGameDatabaseFormulaBasedSymmetry.logicModules.RetrogradeAnalysisExecutor.SymSingleRAExecutor;
+import EndGameDatabaseFormulaBasedSymmetry.logicModules.RetrogradeAnalysisExecutor.SymSingleRAParallelExecutor;
+import EndGameDatabaseFormulaBasedSymmetry.logicModules.SymmetricIndexing;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -15,7 +15,7 @@ import java.util.*;
  * Builds symmetric endgame database tables on demand.
  *
  * Uses SymmetricIndexing (D4 symmetry reduction) for all position counts and
- * normalisation. Data files are stored under EndGameDatabaseSymmetry/data/.
+ * normalisation. Data files are stored under EndGameDatabaseFormulaBasedSymmetry/data/.
  *
  * Node types:
  *   ROOT     (1,1)  — SymRootRAExecutor, no dependencies
@@ -23,13 +23,13 @@ import java.util.*;
  *   PARALLEL (a,b)  — SymSingleRAParallelExecutor (a<b), builds moves_avb AND moves_bva
  *
  * Usage:
- *   java EndGameDatabaseSymmetry.DatabaseBuilderSymmetry <p1> <p2>
- *   java EndGameDatabaseSymmetry.DatabaseBuilderSymmetry          (interactive)
+ *   java EndGameDatabaseFormulaBasedSymmetry.DatabaseBuilderSymmetry <p1> <p2>
+ *   java EndGameDatabaseFormulaBasedSymmetry.DatabaseBuilderSymmetry          (interactive)
  */
 public class DatabaseBuilderSymmetry {
 
     private static final int    BOARD_SIZE = 36;
-    private static final String DATA_PATH  = "EndGameDatabaseSymmetry/data/";
+    private static final String DATA_PATH  = "EndGameDatabaseFormulaBasedSymmetry/data/";
 
     private final BinomialTable table;
 

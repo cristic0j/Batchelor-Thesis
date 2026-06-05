@@ -14,7 +14,7 @@ public class main {
 
 
         try {
-            int index = 14034031;
+            int index = 4594009;
 
             IndexingInput mapAtIndex = Indexing.filePositionToIndexingInput(index, boardSize, 3, 3, table);
             mapAtIndex.displayIndexInputAsAMap(boardSize);
@@ -28,14 +28,14 @@ public class main {
         }
 
 
-        int[] boardMap = {                                                                                                                  
-            2,0,0,0,0,2, 
-            0,1,0,0,1,0,                                                                                                                    
-            0,0,0,0,0,0,                                                                                                                    
-            0,0,0,0,0,0,                                                                                                                    
-            0,0,0,0,0,0,                                                                                                                    
-            2,0,0,0,0,2,                                                                         
-        };     
+        int[] boardMap = {
+            1, 0, 0, 0, 0, 0,
+            0, 2, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0,
+            0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 2, 0,
+            2, 0, 0, 0, 0, 0,
+        };    
 
         IndexingInput indexingInput = Indexing.createIndexingInput(boardMap, false);
         System.err.println(Indexing.indexInputToFilePosition(indexingInput, table));

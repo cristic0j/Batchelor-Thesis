@@ -1,11 +1,11 @@
-package EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysis;
+package EndGameDatabaseFormulaBasedSymmetry.logicModules.RetrogradeAnalysis;
 
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.IndexingInput;
 import EndGameDatabase.dataClasses.Outcome;
 import EndGameDatabase.logicModules.MoveListGenerator;
-import EndGameDatabaseSymmetry.logicModules.SymmetricIndexing;
+import EndGameDatabaseFormulaBasedSymmetry.logicModules.SymmetricIndexing;
 import dataClasses.BoardState;
 import dataClasses.Move;
 import java.util.List;

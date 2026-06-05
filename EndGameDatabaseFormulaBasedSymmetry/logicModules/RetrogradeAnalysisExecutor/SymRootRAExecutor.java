@@ -1,8 +1,8 @@
-package EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysisExecutor;
+package EndGameDatabaseFormulaBasedSymmetry.logicModules.RetrogradeAnalysisExecutor;
 
 import EndGameDatabase.dataClasses.AtomicHugeByteArray;
 import EndGameDatabase.dataClasses.BinomialTable;
-import EndGameDatabaseSymmetry.logicModules.RetrogradeAnalysis.OneVsOneRetrogradeAnalysisSym;
+import EndGameDatabaseFormulaBasedSymmetry.logicModules.RetrogradeAnalysis.OneVsOneRetrogradeAnalysisSym;
 
 public class SymRootRAExecutor {
 

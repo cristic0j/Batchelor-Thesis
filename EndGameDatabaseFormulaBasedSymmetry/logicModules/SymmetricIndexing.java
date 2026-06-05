@@ -1,4 +1,4 @@
-package EndGameDatabaseSymmetry.logicModules;
+package EndGameDatabaseFormulaBasedSymmetry.logicModules;
 
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.IndexingInput;
