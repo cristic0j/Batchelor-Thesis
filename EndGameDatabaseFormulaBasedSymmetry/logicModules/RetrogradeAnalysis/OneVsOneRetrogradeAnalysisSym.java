@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 import logicModules.MoveProcessor;
 
+/** Retrograde analysis for 1v1 endgame positions using symmetric (D4-canonical) indexing. */
 public class OneVsOneRetrogradeAnalysisSym {
     private AtomicHugeByteArray boardResults;
     private final int p1PiecesNum = 1;

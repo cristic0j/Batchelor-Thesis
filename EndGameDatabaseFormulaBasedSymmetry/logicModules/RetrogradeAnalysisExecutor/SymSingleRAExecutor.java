@@ -5,6 +5,7 @@ import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabaseFormulaBasedSymmetry.logicModules.RetrogradeAnalysis.SingleRetrogradeAnalysisSym;
 import java.util.concurrent.CompletableFuture;
 
+/** Async executor that runs a single symmetric retrograde analysis branch on a background thread. */
 public class SymSingleRAExecutor {
 
     private final int boardSize;

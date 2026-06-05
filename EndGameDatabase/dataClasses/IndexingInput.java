@@ -47,7 +47,7 @@ public class IndexingInput {
                 System.out.print(0);
             }
             if ((i+1) % 6 == 0) {
-                System.err.println("");
+                System.out.println();
             }
         }
     }

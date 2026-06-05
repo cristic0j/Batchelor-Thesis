@@ -4,6 +4,7 @@ import EndGameDatabase.dataClasses.AtomicHugeByteArray;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabaseFormulaBasedSymmetry.logicModules.RetrogradeAnalysis.OneVsOneRetrogradeAnalysisSym;
 
+/** Synchronous executor that runs the 1v1 symmetric retrograde analysis and exposes its results. */
 public class SymRootRAExecutor {
 
     private AtomicHugeByteArray rootRAResults;

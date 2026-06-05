@@ -1,5 +1,6 @@
 package EndGameDatabase.dataClasses;
 
+/** Precomputed Pascal's triangle used by {@link EndGameDatabase.logicModules.Indexing} to rank and unrank piece placements. */
 public class BinomialTable {
     public long[][] binomialTable;
 

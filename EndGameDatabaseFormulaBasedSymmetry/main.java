@@ -5,6 +5,10 @@ import EndGameDatabase.logicModules.RandomAccessFile.FileReaderWriter;
 import EndGameDatabaseFormulaBasedSymmetry.logicModules.SymmetricIndexing;
 import java.io.IOException;
 
+/**
+ * Demonstrates the formula-based symmetry builder: computes the canonical
+ * symmetric index for a sample board and looks up its outcome in the database.
+ */
 public class main {
     public static void main(String[] args) {
 

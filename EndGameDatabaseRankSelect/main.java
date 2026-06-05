@@ -3,7 +3,6 @@ package EndGameDatabaseRankSelect;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.logicModules.Indexing;
 import EndGameDatabaseRankSelect.dataClasses.RankSelectTable;
-import EndGameDatabaseRankSelect.logicModules.RankSelectBuilder;
 import EndGameDatabaseRankSelect.logicModules.RankSelectFileReaderWriter;
 
 import java.io.IOException;

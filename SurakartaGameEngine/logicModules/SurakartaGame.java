@@ -26,10 +26,10 @@ public class SurakartaGame{
         Scanner scanner = new Scanner(System.in);
         while (game.currentState.getPlayer1PiecesNum() > 0 && game.currentState.getPlayer2PiecesNum() > 0) {
 
-            System.err.println("From coordinate: ");
+            System.out.println("From coordinate: ");
             int oldCoordinate = scanner.nextInt();
-            
-            System.err.println("To coordinate: ");
+
+            System.out.println("To coordinate: ");
             int newCoordinate = scanner.nextInt();
 
             if (oldCoordinate < 0 || newCoordinate < 0 || oldCoordinate > 35 || newCoordinate > 35) {
@@ -44,13 +44,13 @@ public class SurakartaGame{
                 game.updateStateDataStructures(newState);
                 game.printCurrentBoardStateMatrix();
             }else{
-                System.err.println("Invalid moove or coordinate, try again!");
+                System.out.println("Invalid move or coordinate, try again!");
             }   
         }
         if (game.currentState.getPlayer1PiecesNum() > 0) {
-            System.err.println("Player1 Won!");
+            System.out.println("Player1 Won!");
         }else if(game.currentState.getPlayer2PiecesNum() > 0){
-            System.err.println("Player2 Won!");
+            System.out.println("Player2 Won!");
         }
     }
 
@@ -92,31 +92,29 @@ public class SurakartaGame{
     }
 
     public int getStackLength(){
-        int stackLength = this.gameStack.size();
-        System.err.println("Stack length: "+ stackLength);
-        return stackLength;
+        return this.gameStack.size();
     }
 
     public int getPlayerTurn(){
         if (getStackLength() % 2 == 0) {
-            System.err.println("Player1's turn");
+            System.out.println("Player1's turn");
             return 2;
         }
-        
-        System.err.println("Player2's turn");
+
+        System.out.println("Player2's turn");
         return 1;
     }
-    
+
     public void printCurrentBoardStateMatrix(){
         int[] boardMatrix = this.currentState.getBoardMap();
 
         for (int i = 0; i < boardMatrix.length; i++) {
             if (i % 6 == 0) {
-                System.err.println();
+                System.out.println();
             }
-            System.err.print(boardMatrix[i]);
+            System.out.print(boardMatrix[i]);
         }
-        System.err.println();
-        System.err.println();
+        System.out.println();
+        System.out.println();
     }
 }

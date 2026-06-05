@@ -6,6 +6,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Maps board positions to canonical indices under the D4 dihedral group
+ * (4 rotations × 2 reflections), reducing the effective table size by up to 8×.
+ * Each position is stored once under its lexicographically smallest equivalent.
+ */
 public class SymmetricIndexing {
 
     // The 6 canonical squares — one representative per orbit under the dihedral group D4.

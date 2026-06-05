@@ -100,8 +100,8 @@ public class MoveAdvisor {
                     System.out.println("No safe move found in the database for this position.");
             }
         } else { // DRAW
-            if (bestDrawMove(bestWin, bestDraw) != null) {
-                Move best = bestDrawMove(bestWin, bestDraw);
+            Move best = bestDrawMove(bestWin, bestDraw);
+            if (best != null) {
                 System.out.println("Best draw move: " + formatMove(best));
             } else {
                 System.out.println("No draw-preserving move found in the database for this position.");

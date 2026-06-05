@@ -25,17 +25,17 @@ public class MoveValidator {
 
         int[] boardMatrix = move.getBoardState().getBoardMap();
 
-        int oldCoordonateToX = move.getOldCoordinate().value % 6;
-        int oldCoordonateToY = move.getOldCoordinate().value / 6;
+        int oldCoordinateToX = move.getOldCoordinate().value % 6;
+        int oldCoordinateToY = move.getOldCoordinate().value / 6;
 
-        int newCoordonateToX = move.getNewCoordinate().value % 6;
-        int newCoordonateToY = move.getNewCoordinate().value / 6;
+        int newCoordinateToX = move.getNewCoordinate().value % 6;
+        int newCoordinateToY = move.getNewCoordinate().value / 6;
 
         int valueAtNewCoordinates = boardMatrix[move.getNewCoordinate().value];
-        int distanceX = Math.abs(oldCoordonateToX - newCoordonateToX);
-        int distanceY = Math.abs(oldCoordonateToY - newCoordonateToY);
+        int distanceX = Math.abs(oldCoordinateToX - newCoordinateToX);
+        int distanceY = Math.abs(oldCoordinateToY - newCoordinateToY);
 
-        //Check if the move is one sqare radius
+        //Check if the move is one square radius
         if (distanceX <= 1 && distanceY <= 1) {
             if (valueAtNewCoordinates == 0) {
                 return 0;
@@ -68,14 +68,14 @@ public class MoveValidator {
     public static boolean simpleMoveValidator(Move move){
         int[] boardMatrix = move.getBoardState().getBoardMap();
 
-        int oldCoordonateToX = move.getOldCoordinate().value % 6;
-        int oldCoordonateToY = move.getOldCoordinate().value / 6;
+        int oldCoordinateToX = move.getOldCoordinate().value % 6;
+        int oldCoordinateToY = move.getOldCoordinate().value / 6;
 
-        int newCoordonateToX = move.getNewCoordinate().value % 6;
-        int newCoordonateToY = move.getNewCoordinate().value / 6;
+        int newCoordinateToX = move.getNewCoordinate().value % 6;
+        int newCoordinateToY = move.getNewCoordinate().value / 6;
 
-        int distanceX = Math.abs(oldCoordonateToX - newCoordonateToX);
-        int distanceY = Math.abs(oldCoordonateToY - newCoordonateToY);
+        int distanceX = Math.abs(oldCoordinateToX - newCoordinateToX);
+        int distanceY = Math.abs(oldCoordinateToY - newCoordinateToY);
 
         if (move.getOldCoordinate().value < 0 ||
             move.getNewCoordinate().value < 0 ||
@@ -87,7 +87,7 @@ public class MoveValidator {
         int valueAtOldCoordinates = boardMatrix[move.getOldCoordinate().value];
         int valueAtNewCoordinates = boardMatrix[move.getNewCoordinate().value];
 
-        //Check if the move is one sqare radius
+        //Check if the move is one square radius
         if (distanceX > 1 || distanceY > 1) {
             return false;
         }

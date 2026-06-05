@@ -1,7 +1,7 @@
 package dataClasses;
 //Represents the state of the board at some instance
 public class BoardState {
-    //A coordonate can be:
+    //A coordinate can be:
         // 0 - empty
         // 1 - player 1's piece
         // 2 - player 2's piece

@@ -21,8 +21,4 @@ public class Move {
     public Coordinate getNewCoordinate(){
         return newCoordinate;
     }
-    //Setters
-    public void setOldCoordinate(Coordinate coordinate){
-        this.oldCoordinate = coordinate;
-    }
 }

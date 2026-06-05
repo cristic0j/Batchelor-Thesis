@@ -3,42 +3,36 @@ package EndGameDatabase;
 import EndGameDatabase.dataClasses.BinomialTable;
 import EndGameDatabase.dataClasses.IndexingInput;
 import EndGameDatabase.logicModules.Indexing;
-import EndGameDatabase.logicModules.RandomAccessFile.FileReaderWriter;
-import java.io.IOException;
+import java.util.Arrays;
 
+/**
+ * Demonstrates the combinatorial indexing system with a round-trip verification:
+ * encode a sample board to a file-position index, decode it back, and confirm
+ * the recovered board matches the original.
+ */
 public class main {
     public static void main(String[] args) {
-        
         final int boardSize = 36;
         BinomialTable table = new BinomialTable(boardSize);
 
-
-        try {
-            int index = 4594009;
-
-            IndexingInput mapAtIndex = Indexing.filePositionToIndexingInput(index, boardSize, 3, 3, table);
-            mapAtIndex.displayIndexInputAsAMap(boardSize);
-
-            System.err.println("Value is: "+FileReaderWriter.readValueFromFile("EndGameDatabase/data/moves3v3.txt", index));
-
-            
-        } catch (IOException e) {
-            System.err.println("Failed to save the database: " + e.getMessage());
-            e.printStackTrace();
-        }
-
-
-        int[] boardMap = {
+        int[] board = {
             1, 0, 0, 0, 0, 0,
             0, 2, 0, 0, 0, 0,
             0, 0, 1, 0, 0, 0,
             0, 0, 0, 1, 0, 0,
             0, 0, 0, 0, 2, 0,
             2, 0, 0, 0, 0, 0,
-        };    
+        };
+        int p1 = 3, p2 = 3;
 
-        IndexingInput indexingInput = Indexing.createIndexingInput(boardMap, false);
-        System.err.println(Indexing.indexInputToFilePosition(indexingInput, table));
+        IndexingInput input = Indexing.createIndexingInput(board, false);
+        long index = Indexing.indexInputToFilePosition(input, table);
+        System.out.println("Encoded index: " + index);
+
+        IndexingInput decoded = Indexing.filePositionToIndexingInput(index, boardSize, p1, p2, table);
+        int[] recoveredBoard = decoded.getMapFromIndexingInput(boardSize);
+
+        System.out.println("Round-trip match: " + Arrays.equals(board, recoveredBoard));
+        decoded.displayIndexInputAsAMap(boardSize);
     }
-    
 }
